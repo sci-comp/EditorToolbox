@@ -1,5 +1,5 @@
 @tool
-extends Object
+extends EditorPlugin
 
 # <summary>
 # Searches for texture files in "res://Temp" and creates StandardMaterial3D 
@@ -24,7 +24,7 @@ func execute():
 		if filename.ends_with(".import"):
 			continue
 			
-		if filename.begins_with("T_"):
+		if filename.begins_with("t_"):
 			texture_files.append(filename)
 			
 			if filename.ends_with(normal_suffix):
@@ -47,7 +47,7 @@ func execute():
 			mat.normal_enabled = true
 			mat.normal_texture = normal_texture
 		
-		var material_path = "res://Temp/MI_" + base_name.substr(2) + ".tres"
+		var material_path = "res://Temp/mi_" + base_name.substr(2) + ".tres"
 		
 		ResourceSaver.save(mat, material_path)
 		
