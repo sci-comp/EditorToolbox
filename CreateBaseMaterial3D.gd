@@ -41,6 +41,7 @@ func execute():
 		var normal_filename = base_name + normal_suffix
 		
 		mat.albedo_texture = albedo_texture
+		#mat.transparency = mat.TRANSPARENCY_ALPHA
 		
 		if normal_filename in normal_maps:
 			var normal_texture = load("res://Temp/" + normal_filename)
