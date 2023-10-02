@@ -5,6 +5,8 @@ var submenu_command: PopupMenu
 var submenu_creation: PopupMenu
 var submenu_test: PopupMenu
 
+var reusable_instance
+
 func _enter_tree():
 	
 	# Command
@@ -75,8 +77,10 @@ func _on_creation_submenu_item_selected(id: int):
 		create_base_material_3d()
 
 func create_base_material_3d():
-	var _instance = preload("res://addons/EditorToolbox/CreateBaseMaterial3D.gd").new()
-	_instance.execute()
+	reusable_instance = preload("res://addons/EditorToolbox/CreateBaseMaterial3D.gd").new()
+	add_child(reusable_instance)
+	reusable_instance.done.connect(_on_reusable_instance_done)
+	reusable_instance.execute()
 
 
 # ------------------------------------------------------------------------------
@@ -95,10 +99,16 @@ func test0():
 	_instance.execute()
 
 func test1():
-	var _instance = preload("res://addons/EditorToolbox/TestEditorWindow.gd").new()
-	add_child(_instance)
-	_instance.execute()
+	reusable_instance = preload("res://addons/EditorToolbox/TestEditorWindow.gd").new()
+	add_child(reusable_instance)
+	reusable_instance.done.connect(_on_reusable_instance_done)
+	reusable_instance.execute()
 
 
+# ------------------------------------------------------------------------------
+
+func _on_reusable_instance_done():
+	print("Freeing instance")
+	reusable_instance.queue_free()
 
 
