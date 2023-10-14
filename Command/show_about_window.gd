@@ -1,9 +1,8 @@
 @tool
 extends EditorPlugin
 
-var arr : Array = []
 var vbox : VBoxContainer
-var export_field : Label
+var title : Label
 var ok_button : Button
 var popup_instance : PopupPanel
 
@@ -14,8 +13,6 @@ func execute():
 	popup_instance = PopupPanel.new()
 	add_child(popup_instance)
 	
-	# Get selection paths
-	arr = get_editor_interface().get_selected_paths()
 	popup_instance.popup_centered(Vector2(300, 200))
 
 	# VBox
@@ -23,9 +20,9 @@ func execute():
 	popup_instance.add_child(vbox)
 
 	# Label
-	export_field = Label.new()
-	export_field.text = "Drop objects here"
-	vbox.add_child(export_field)
+	title = Label.new()
+	title.text = "This is an example for creating popup windows."
+	vbox.add_child(title)
 
 	# Ok button
 	ok_button = Button.new()
@@ -35,11 +32,6 @@ func execute():
 	vbox.add_child(ok_button)
 
 func _on_ok_pressed():
-	
-	for obj in arr:
-		print(obj)
-	
 	popup_instance.queue_free()
 	emit_signal("done")
-
 

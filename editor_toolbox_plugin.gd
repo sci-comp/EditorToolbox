@@ -13,25 +13,22 @@ func _enter_tree():
 	submenu_command.connect("id_pressed", Callable(self, "_on_command_submenu_item_selected"))
 	add_tool_submenu_item("Command", submenu_command)
 	submenu_command.add_item("Screenshot (Ctrl+K)", 0)
+	submenu_command.add_item("Show About Window", 1)
 	
-	# Creation
+	# FileSystem
 	submenu_creation = PopupMenu.new()
 	submenu_creation.connect("id_pressed", Callable(self, "_on_creation_submenu_item_selected"))
-	add_tool_submenu_item("Creation", submenu_creation)
-	submenu_creation.add_item("Create BaseMaterial3D", 0)
+	add_tool_submenu_item("FileSystem", submenu_creation)
+	submenu_creation.add_item("Create BaseMaterial3D (Ctrl+M)", 0)
+	submenu_creation.add_item("Print selected paths (Alt+P)", 1)
 
 	# Scene
 	submenu_creation = PopupMenu.new()
 	submenu_creation.connect("id_pressed", Callable(self, "_on_scene_submenu_item_selected"))
 	add_tool_submenu_item("Scene", submenu_creation)
-	submenu_creation.add_item("Reset node names", 0)
-	
-	# Test
-	submenu_creation = PopupMenu.new()
-	submenu_creation.connect("id_pressed", Callable(self, "_on_test_submenu_item_selected"))
-	add_tool_submenu_item("Test", submenu_creation)
-	submenu_creation.add_item("Test0 (Ctrl+0)", 0)
-	submenu_creation.add_item("Test1 (Ctrl+9)", 1)
+	submenu_creation.add_item("Print selected node names (Alt+N)", 0)
+	submenu_creation.add_item("Reset node names (Alt+R)", 1)
+
 
 func _exit_tree():
 	remove_tool_menu_item("Command")
@@ -50,19 +47,16 @@ func _input(event: InputEvent):
 			
 			# Creation
 			
-			# Scene
 			if event.ctrl_pressed:
-				if event.keycode == KEY_6:
+				if event.keycode == KEY_M:
+					create_base_material_3d()
+			
+			# Scene
+			
+			if event.alt_pressed:
+				if event.keycode == KEY_N:
 					reset_node_name()
 				
-			# Test
-			
-			if event.ctrl_pressed:
-				if event.keycode == KEY_0:
-					test0()
-				
-				elif event.keycode == KEY_9:
-					test1()
 
 # ------------------------------------------------------------------------------
 # -- Command -------------------------------------------------------------------
@@ -71,22 +65,35 @@ func _input(event: InputEvent):
 func _on_command_submenu_item_selected(id: int):
 	if id == 0:
 		screenshot()
+	if id == 1:
+		show_about_window()
 
 func screenshot():
-	var _instance = preload("res://addons/EditorToolbox/screenshot.gd").new()
+	var _instance = preload("res://addons/EditorToolbox/Command/screenshot.gd").new()
 	_instance.execute()
 
+func show_about_window():
+	reusable_instance = preload("res://addons/EditorToolbox/Command/show_about_window.gd").new()
+	add_child(reusable_instance)
+	reusable_instance.done.connect(_on_reusable_instance_done)
+	reusable_instance.execute()
 
 # ------------------------------------------------------------------------------
-# -- Creation ------------------------------------------------------------------
+# -- FileSystem ----------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
 func _on_creation_submenu_item_selected(id: int):
 	if id == 0:
+		print_selected_paths()
+	if id == 1:
 		create_base_material_3d()
 
+func print_selected_paths():
+	var _instance = preload("res://addons/EditorToolbox/FileSystem/print_selected_paths.gd").new()
+	_instance.execute()
+
 func create_base_material_3d():
-	reusable_instance = preload("res://addons/EditorToolbox/CreateBaseMaterial3D.gd").new()
+	reusable_instance = preload("res://addons/EditorToolbox/FileSystem/create_base_material_3D.gd").new()
 	add_child(reusable_instance)
 	reusable_instance.done.connect(_on_reusable_instance_done)
 	reusable_instance.execute()
@@ -100,30 +107,10 @@ func _on_scene_submenu_item_selected(id: int):
 		reset_node_name()
 
 func reset_node_name():
-	var _instance = preload("res://addons/EditorToolbox/reset_node_name.gd").new()
+	var _instance = preload("res://addons/EditorToolbox/Scene/reset_node_name.gd").new()
 	_instance.execute()
 
 
-# ------------------------------------------------------------------------------
-# -- Test ----------------------------------------------------------------------
-# ------------------------------------------------------------------------------
-
-func _on_test_submenu_item_selected(id: int):
-	if id == 0:
-		test0()
-	elif id == 1:
-		print("test1 selected")
-		test1()
-
-func test0():
-	var _instance = preload("res://addons/EditorToolbox/TestPrintNames.gd").new()
-	_instance.execute()
-
-func test1():
-	reusable_instance = preload("res://addons/EditorToolbox/TestEditorWindow.gd").new()
-	add_child(reusable_instance)
-	reusable_instance.done.connect(_on_reusable_instance_done)
-	reusable_instance.execute()
 
 
 # ------------------------------------------------------------------------------
