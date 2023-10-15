@@ -8,14 +8,20 @@ var reusable_instance
 
 func _enter_tree():
 	
-	# Command
+	# -----------------------------------------------------------------
+	# -- Command ------------------------------------------------------
+	# -----------------------------------------------------------------
+	
 	submenu_command = PopupMenu.new()
 	submenu_command.connect("id_pressed", Callable(self, "_on_command_submenu_item_selected"))
 	add_tool_submenu_item("Command", submenu_command)
 	submenu_command.add_item("Screenshot (Ctrl+K)", 0)
 	submenu_command.add_item("Show About Window", 1)
 	
-	# FileSystem
+	# -----------------------------------------------------------------
+	# -- FileSystem ---------------------------------------------------
+	# -----------------------------------------------------------------
+	
 	submenu_creation = PopupMenu.new()
 	submenu_creation.connect("id_pressed", Callable(self, "_on_creation_submenu_item_selected"))
 	add_tool_submenu_item("FileSystem", submenu_creation)
@@ -23,13 +29,16 @@ func _enter_tree():
 	submenu_creation.add_item("Print selected paths (Alt+P)", 1)
 	submenu_creation.add_item("Reimport glb (Ctrl+I)", 2)
 
-	# Scene
+	# -----------------------------------------------------------------
+	# -- Scene --------------------------------------------------------
+	# -----------------------------------------------------------------
+	
 	submenu_creation = PopupMenu.new()
 	submenu_creation.connect("id_pressed", Callable(self, "_on_scene_submenu_item_selected"))
 	add_tool_submenu_item("Scene", submenu_creation)
 	submenu_creation.add_item("Print selected node names (Alt+N)", 0)
 	submenu_creation.add_item("Reset node names (Alt+R)", 1)
-
+	submenu_creation.add_item("Reset transform (Ctrl+T)", 2)
 
 func _exit_tree():
 	remove_tool_menu_item("Command")
@@ -41,12 +50,16 @@ func _input(event: InputEvent):
 	if event is InputEventKey:
 		if event.is_pressed() and !event.is_echo():
 			
-			# Command
+			# -----------------------------------------------------------------
+			# -- Command ------------------------------------------------------
+			# -----------------------------------------------------------------
 			
 			if event.ctrl_pressed and event.keycode == KEY_K:
 				screenshot()
 			
-			# FileSystem
+			# -----------------------------------------------------------------
+			# -- FileSystem ---------------------------------------------------
+			# -----------------------------------------------------------------
 			
 			if event.ctrl_pressed:
 				if event.keycode == KEY_M:
@@ -54,12 +67,24 @@ func _input(event: InputEvent):
 				if event.keycode == KEY_I:
 					reimport_glb()
 			
-			# Scene
+			if event.alt_pressed:
+				if event.keycode == KEY_P:
+					print_selected_paths()
+			
+			# -----------------------------------------------------------------
+			# -- Scene --------------------------------------------------------
+			# -----------------------------------------------------------------
+			
+			if event.ctrl_pressed:
+				if event.keycode == KEY_T:
+					reset_transform()
 			
 			if event.alt_pressed:
 				if event.keycode == KEY_N:
+					print_selected_node_names()
+				if event.keycode == KEY_R:
 					reset_node_name()
-				
+
 
 # ------------------------------------------------------------------------------
 # -- Command -------------------------------------------------------------------
@@ -115,15 +140,24 @@ func reimport_glb():
 
 func _on_scene_submenu_item_selected(id: int):
 	if id == 0:
+		print_selected_node_names()
+	if id == 1:
 		reset_node_name()
+	if id == 2:
+		reset_transform()
+
+func print_selected_node_names():
+	var _instance = preload("res://addons/EditorToolbox/Scene/print_selected_node_names.gd").new()
+	_instance.execute()
 
 func reset_node_name():
 	var _instance = preload("res://addons/EditorToolbox/Scene/reset_node_name.gd").new()
 	_instance.execute()
 
-
-
-
+func reset_transform():
+	var _instance = preload("res://addons/EditorToolbox/Scene/reset_transform.gd").new()
+	_instance.execute()
+	
 # ------------------------------------------------------------------------------
 
 func _on_reusable_instance_done():

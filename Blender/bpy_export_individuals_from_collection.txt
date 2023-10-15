@@ -22,3 +22,4 @@ for obj in objects:
 	if obj.select_get():
 		export_filename = os.path.join(export_path, f"{obj.name}.glb")
 		bpy.ops.export_scene.gltf(filepath=export_filename, export_format=export_format, use_selection=True, export_image_format=export_image_format)
+
