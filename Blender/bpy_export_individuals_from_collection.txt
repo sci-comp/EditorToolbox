@@ -10,9 +10,10 @@ import os
 export_path = bpy.path.abspath("//")
 
 # Possible formats: GLB, GLTF_EMBEDDED, GLTF_SEPARATE
-# Note: The export_texture_dir="" argument below ensures that textures are not embedded in the .glb file.
-#           Remove this argument to embed textures with glb files, or when using GLTF_EMBEDDED.
 export_format = "GLB"
+
+# Possible formats: PNG, JPEG, NONE
+export_image_format = "NONE"
 
 # All objects in the current Blender scene
 objects = bpy.data.objects
@@ -20,4 +21,4 @@ objects = bpy.data.objects
 for obj in objects:
 	if obj.select_get():
 		export_filename = os.path.join(export_path, f"{obj.name}.glb")
-		bpy.ops.export_scene.gltf(filepath=export_filename, export_format=export_format, use_selection=True, export_texture_dir="")
+		bpy.ops.export_scene.gltf(filepath=export_filename, export_format=export_format, use_selection=True, export_image_format=export_image_format)
