@@ -15,8 +15,9 @@ func _enter_tree():
 	submenu_command = PopupMenu.new()
 	submenu_command.connect("id_pressed", Callable(self, "_on_command_submenu_item_selected"))
 	add_tool_submenu_item("Command", submenu_command)
-	submenu_command.add_item("Screenshot (Ctrl+K)", 0)
-	submenu_command.add_item("Show About Window", 1)
+	submenu_command.add_item("Reset 3d viewport (Shift+C)", 0)
+	submenu_command.add_item("Screenshot (Ctrl+K)", 1)
+	submenu_command.add_item("Show About Window", 2)
 	
 	# -----------------------------------------------------------------
 	# -- FileSystem ---------------------------------------------------
@@ -53,6 +54,10 @@ func _input(event: InputEvent):
 			# -----------------------------------------------------------------
 			# -- Command ------------------------------------------------------
 			# -----------------------------------------------------------------
+			
+			if event.shift_pressed:
+				if event.keycode == KEY_C:
+					reset_3d_viewport()
 			
 			if event.ctrl_pressed and event.keycode == KEY_K:
 				screenshot()
@@ -92,9 +97,15 @@ func _input(event: InputEvent):
 
 func _on_command_submenu_item_selected(id: int):
 	if id == 0:
-		screenshot()
+		reset_3d_viewport()
 	if id == 1:
+		screenshot()
+	if id == 2:
 		show_about_window()
+
+func reset_3d_viewport():
+	var _instance = preload("res://addons/EditorToolbox/Command/reset_3d_viewport.gd").new()
+	_instance.execute()
 
 func screenshot():
 	var _instance = preload("res://addons/EditorToolbox/Command/screenshot.gd").new()
