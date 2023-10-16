@@ -15,9 +15,8 @@ func _enter_tree():
 	submenu_command = PopupMenu.new()
 	submenu_command.connect("id_pressed", Callable(self, "_on_command_submenu_item_selected"))
 	add_tool_submenu_item("Command", submenu_command)
-	submenu_command.add_item("Reset 3d viewport (Shift+C)", 0)
-	submenu_command.add_item("Screenshot (Ctrl+K)", 1)
-	submenu_command.add_item("Show About Window", 2)
+	submenu_command.add_item("Screenshot (Ctrl+K)", 0)
+	submenu_command.add_item("Show About Window", 1)
 	
 	# -----------------------------------------------------------------
 	# -- FileSystem ---------------------------------------------------
@@ -28,7 +27,7 @@ func _enter_tree():
 	add_tool_submenu_item("FileSystem", submenu_creation)
 	submenu_creation.add_item("Create BaseMaterial3D (Ctrl+M)", 0)
 	submenu_creation.add_item("Print selected paths (Alt+P)", 1)
-	submenu_creation.add_item("Reimport glb (Ctrl+I)", 2)
+	submenu_creation.add_item("Reimport glb (Ctrl+Alt+I)", 2)
 
 	# -----------------------------------------------------------------
 	# -- Scene --------------------------------------------------------
@@ -37,9 +36,10 @@ func _enter_tree():
 	submenu_creation = PopupMenu.new()
 	submenu_creation.connect("id_pressed", Callable(self, "_on_scene_submenu_item_selected"))
 	add_tool_submenu_item("Scene", submenu_creation)
-	submenu_creation.add_item("Print selected node names (Alt+N)", 0)
-	submenu_creation.add_item("Reset node names (Alt+R)", 1)
-	submenu_creation.add_item("Reset transform (Ctrl+T)", 2)
+	submenu_creation.add_item("Alphabetize children of selected nodes (Alt+A)", 0)
+	submenu_creation.add_item("Print selected node names (Alt+N)", 1)
+	submenu_creation.add_item("Reset node names (Alt+R)", 2)
+	submenu_creation.add_item("Reset transform (Ctrl+T)", 3)
 
 func _exit_tree():
 	remove_tool_menu_item("Command")
@@ -55,24 +55,23 @@ func _input(event: InputEvent):
 			# -- Command ------------------------------------------------------
 			# -----------------------------------------------------------------
 			
-			if event.shift_pressed:
-				if event.keycode == KEY_C:
-					reset_3d_viewport()
-			
-			if event.ctrl_pressed and event.keycode == KEY_K:
-				screenshot()
+			if event.ctrl_pressed: 
+				if event.keycode == KEY_K:
+					screenshot()
 			
 			# -----------------------------------------------------------------
 			# -- FileSystem ---------------------------------------------------
 			# -----------------------------------------------------------------
 			
-			if event.ctrl_pressed:
-				if event.keycode == KEY_M:
-					create_base_material_3d()
+			if event.ctrl_pressed and event.alt_pressed:
 				if event.keycode == KEY_I:
 					reimport_glb()
-			
-			if event.alt_pressed:
+					
+			elif event.ctrl_pressed:
+				if event.keycode == KEY_M:
+					create_base_material_3d()
+					
+			elif event.alt_pressed:
 				if event.keycode == KEY_P:
 					print_selected_paths()
 			
@@ -80,14 +79,19 @@ func _input(event: InputEvent):
 			# -- Scene --------------------------------------------------------
 			# -----------------------------------------------------------------
 			
-			if event.ctrl_pressed:
+			if event.ctrl_pressed and event.alt_pressed:
+				print("temp")
+			
+			elif event.ctrl_pressed:
 				if event.keycode == KEY_T:
 					reset_transform()
 			
-			if event.alt_pressed:
-				if event.keycode == KEY_N:
+			elif event.alt_pressed:
+				if event.keycode == KEY_A:
+					alphabetize_nodes()
+				elif event.keycode == KEY_N:
 					print_selected_node_names()
-				if event.keycode == KEY_R:
+				elif event.keycode == KEY_R:
 					reset_node_name()
 
 
@@ -97,15 +101,9 @@ func _input(event: InputEvent):
 
 func _on_command_submenu_item_selected(id: int):
 	if id == 0:
-		reset_3d_viewport()
-	if id == 1:
 		screenshot()
-	if id == 2:
+	if id == 1:
 		show_about_window()
-
-func reset_3d_viewport():
-	var _instance = preload("res://addons/EditorToolbox/Command/reset_3d_viewport.gd").new()
-	_instance.execute()
 
 func screenshot():
 	var _instance = preload("res://addons/EditorToolbox/Command/screenshot.gd").new()
@@ -151,11 +149,17 @@ func reimport_glb():
 
 func _on_scene_submenu_item_selected(id: int):
 	if id == 0:
-		print_selected_node_names()
+		alphabetize_nodes
 	if id == 1:
-		reset_node_name()
+		print_selected_node_names()
 	if id == 2:
+		reset_node_name()
+	if id == 3:
 		reset_transform()
+
+func alphabetize_nodes():
+	var _instance = preload("res://addons/EditorToolbox/Scene/alphabetize_nodes.gd").new()
+	_instance.execute()
 
 func print_selected_node_names():
 	var _instance = preload("res://addons/EditorToolbox/Scene/print_selected_node_names.gd").new()
