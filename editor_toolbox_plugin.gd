@@ -26,8 +26,9 @@ func _enter_tree():
 	submenu_creation.connect("id_pressed", Callable(self, "_on_creation_submenu_item_selected"))
 	add_tool_submenu_item("FileSystem", submenu_creation)
 	submenu_creation.add_item("Create BaseMaterial3D (Ctrl+M)", 0)
-	submenu_creation.add_item("Print selected paths (Alt+P)", 1)
-	submenu_creation.add_item("Reimport glb (Ctrl+Alt+I)", 2)
+	submenu_creation.add_item("Instantiate in a row (Ctrl+1)", 1)
+	submenu_creation.add_item("Print selected paths (Alt+P)", 2)
+	submenu_creation.add_item("Reimport glb (Ctrl+Alt+I)", 3)
 
 	# -----------------------------------------------------------------
 	# -- Scene --------------------------------------------------------
@@ -68,6 +69,8 @@ func _input(event: InputEvent):
 					reimport_glb()
 					
 			elif event.ctrl_pressed:
+				if event.keycode == KEY_1:
+					instantiate_in_a_row()
 				if event.keycode == KEY_M:
 					create_base_material_3d()
 					
@@ -123,8 +126,10 @@ func _on_creation_submenu_item_selected(id: int):
 	if id == 0:
 		create_base_material_3d()
 	if id == 1:
-		print_selected_paths()
+		instantiate_in_a_row()
 	if id == 2:
+		print_selected_paths()
+	if id == 3:
 		reimport_glb()
 
 func create_base_material_3d():
@@ -132,7 +137,11 @@ func create_base_material_3d():
 	add_child(reusable_instance)
 	reusable_instance.done.connect(_on_reusable_instance_done)
 	reusable_instance.execute()
-	
+
+func instantiate_in_a_row():
+	var _instance = preload("res://addons/EditorToolbox/FileSystem/instantiate_in_a_row.gd").new()
+	_instance.execute()
+
 func print_selected_paths():
 	var _instance = preload("res://addons/EditorToolbox/FileSystem/print_selected_paths.gd").new()
 	_instance.execute()
