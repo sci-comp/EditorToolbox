@@ -14,6 +14,8 @@ var phys_material_map = {
 
 func _post_import(scene : Node):
 	
+	print("Inside glb _post_import")
+	
 	var pattern = "SM_(\\w+)_M_\\1.*"  # Mesh naming pattern from Blender
 	var regex = RegEx.new()
 	regex.compile(pattern)

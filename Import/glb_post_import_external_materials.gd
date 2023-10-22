@@ -14,18 +14,22 @@ var phys_material_map = {
 
 func _post_import(scene : Node):
 	
+	print("Inside _post_import with external materials: " + get_source_file())
+	
 	var pattern = "SM_(\\w+)_M_\\1.*"  # Mesh naming pattern from Blender
 	var regex = RegEx.new()
 	regex.compile(pattern)
 	
-	var mesh_resource_name
+	var scene_name = "PF_"
 	
 	for node in scene.get_children():
 		
 		if node is MeshInstance3D:
 			
-			var root_path = "res://Import_Zone/"
-			var file_path = root_path + node.name + ".glb"
+			# -----------------------------------------------------------------
+			# Assign external material
+			
+			var file_path = get_source_file()
 			var file = FileAccess.open(file_path, FileAccess.READ)
 			
 			if file:
@@ -54,28 +58,50 @@ func _post_import(scene : Node):
 					print("JSON Parse Error: ", error_code)
 				
 				file.close()
-
-			# Physics materials are automatically detected
-			# ex) M_Broom_01-wood-convcol
-			var phys_material
-			mesh_resource_name = node.mesh.resource_name
-			for key in phys_material_map.keys():
-				if key in mesh_resource_name:
-					phys_material = phys_material_map[key]
-			if phys_material is PhysicsMaterial:
-				for i in range(node.get_child_count()):
-					var staticBody3D = node.get_child(i)
-					if staticBody3D is StaticBody3D:
+			
+			# -----------------------------------------------------------------
+			# Assign physics material, ex, M_Broom_01-wood-convcol
+			
+			if (node.get_child_count() == 1):
+				
+				# If the MeshInstance3D node has a child, then it should be a 
+				# StaticBody3D node, and this node's mesh property should have
+				# a suffix.
+				
+				var staticBody3D = node.get_child(0)
+				if staticBody3D is StaticBody3D:
+					var phys_material
+					for key in phys_material_map.keys():
+						if key in node.mesh.resource_name:
+							phys_material = phys_material_map[key]
+							break
+					if phys_material is PhysicsMaterial:
 						staticBody3D.physics_material_override = phys_material
+			
+			# -----------------------------------------------------------------
+	
+		elif node is StaticBody3D:
+			
+			# Multiple StaticBody3D nodes may exists as siblings to a 
+			# MeshInstance3D node.
+			
+			var object_name = node.name.split("_")[1]
+			
+			if (object_name == null):
+				print("object_name is null")
+			else:
+				var phys_material
+				for key in phys_material_map.keys():
+					if key in node.name:
+						phys_material = phys_material_map[key]
 						break
-	
-	# Set the instantiated node's name
-	var result = regex.search(mesh_resource_name)
-	if result:
-		scene.name = "PF_" + result.get_string(1) + "-n1"
-	
+				if phys_material is PhysicsMaterial:
+					node.physics_material_override = phys_material
+		
+		scene_name = node.name.split("_")[1]
+		
+	scene.name = "PF_" + scene_name
 	print("Finished importing: " + scene.name)
-	
 	return scene
 	
 # Searches the entire project for a resource with material_name. Returns the first path found.
