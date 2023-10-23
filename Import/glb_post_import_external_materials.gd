@@ -98,9 +98,16 @@ func _post_import(scene : Node):
 				if phys_material is PhysicsMaterial:
 					node.physics_material_override = phys_material
 		
-		scene_name = node.name.split("_")[1]
+		var _temp = node.name.split("-")[0].split("_")
+		var _sliced = _temp.slice(1, _temp.size())  # One or more
+		scene_name = ""
 		
-	scene.name = "PF_" + scene_name
+		for i in _sliced:
+			scene_name += i
+			if i != _sliced[-1] and _sliced.size() > 1:
+				scene_name += "_"
+	
+	scene.name = "PF_" + scene_name + "-n1"
 	print("Finished importing: " + scene.name)
 	return scene
 	
