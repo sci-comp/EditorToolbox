@@ -3,17 +3,17 @@
 Native Collision Support
 ------------------------
 
-Godot's default suffices for automatically generating mesh on import are,
+Godot's default suffixes for automatically generating mesh on import are,
 
 	-col
 	-convcol
 	-colonly
 	-convcolonly
 
-Godot's suffices are not meant to be used together with the custom ones below.
+Godot's suffixes are not meant to be used together with the custom ones below.
 Doing so will lead to undefined behavior.
 
-Note: Godot supported suffices are removed from the node's name before _post_process 
+Note: Godot supported suffixes are removed from the node's name before _post_process 
 triggers.
 
 Custom Prefix and Suffix Definitions
@@ -22,7 +22,7 @@ Custom Prefix and Suffix Definitions
 Prefix and suffix conventions must be followed for this import process. The 
 hypen is treated as a reserved character for object and mesh names in Blender.
 
-Prefices represent: prefab, static mesh, and skeletal mesh respectively,
+prefixes represent: prefab, static mesh, and skeletal mesh respectively,
 
 	PF_
 	SM_
@@ -34,7 +34,7 @@ convention I have chosen does not use the word scene at all.
 	Prefab: used for scenes that behave as prefabs.
 	Level: used for scenes that behave as levels (additive scenes in Unity)
 
-Custom suffices represent: box, sphere, capsule, convex, concave mesh colliders 
+Custom suffixes represent: box, sphere, capsule, convex, concave mesh colliders 
 respectively,
 
 	-gbx
@@ -80,7 +80,7 @@ Note: Materials named after Godot's physics materials are assigned to collision
 mesh in Blender. This is not required, though it is helpful since materials with
 appropriate colors may be used in Blender as a visual aid. This could be used as
 an approach for an alternate implementation. This script, however, only looks at
-materials for the rendered mesh. Suffices are used for collision mesh instead, 
+materials for the rendered mesh. suffixes are used for collision mesh instead, 
 and we do not assign materials to collision-only mesh.
 
 After import,
@@ -156,7 +156,7 @@ func _post_import(scene : Node):
 						# 5) Assign physics material by calling assign_physics_material(node) where node is the StaticBody3D node.
 						
 						"""
-						Custom suffices represent: box, sphere, capsule, convex, concave mesh colliders 
+						Custom suffixes represent: box, sphere, capsule, convex, concave mesh colliders 
 						respectively,
 
 							-gbx
