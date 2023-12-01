@@ -1,72 +1,53 @@
+'''
+
+This script exports each selected object as a separate file. Children of selected 
+objects are included with the parent object.
+
+Undefined behavior:
+	
+	1) Do not select both a parent and child object as the same time.
+	2) Children of child objects are not expected, and will not be exported.
+
+'''
+
 import bpy
 import os
 
+# -----------------------------------------------------------------------------------
 
-separate_collision_mesh_exists = True
+export_image_format = "NONE"  # AUTO, NONE
 
-export_path = bpy.path.abspath("//")  # The absolute path of the current Blender project directory
-export_format = "GLB"  # Possible formats: GLB, GLTF_EMBEDDED, GLTF_SEPARATE
-export_image_format = "NONE"  # Possible formats: AUTO, NONE
+# -----------------------------------------------------------------------------------
+
+export_path = bpy.path.abspath("//")
+export_format = "GLB"  # GLB, GLTF_EMBEDDED, GLTF_SEPARATE
 
 original_selected_objects = [obj for obj in bpy.context.selected_objects]
-bpy.ops.object.select_all(action='DESELECT')
 
-if separate_collision_mesh_exists:
+for obj in original_selected_objects:
+		
+	# By selecting each object at a time, we ensure that only referenced textures 
+	# are embedded in the exported glb file
+	bpy.ops.object.select_all(action = 'DESELECT')
+	obj.select_set(True)
+	for child in obj.children:
+		child.select_set(True)
+
+	name_without_prefix = obj.name.split("_", 1)[1]
+	save_as = "PF_" + name_without_prefix
 	
-	object_groups = {}
-	for obj in original_selected_objects:
+	print("save_as: " + save_as)
 	
-		base_name = obj.name.split("-")[0]
-		if base_name not in object_groups:
-			object_groups[base_name] = []
-			
-		object_groups[base_name].append(obj)
-		
-		
-	for base_name, group in object_groups.items():
-		
-		bpy.ops.object.select_all(action='DESELECT')
-		for obj in group:
-			obj.select_set(True)
-		
-		export_filename = os.path.join(export_path, f"{base_name}.glb")
-		bpy.ops.export_scene.gltf(filepath=export_filename, export_format=export_format, use_selection=True, export_image_format=export_image_format)
-		
-		print("Exported: " + export_filename)
-		
-	# Restore original selection
-	for obj in original_selected_objects:
-		obj.select_set(True)
-
-
-else:
+	export_filename = os.path.join(export_path, f"{save_as}.glb")
 	
-	for obj in original_selected_objects:
-		
-		# By selecting each object at a time, 
-		# we ensure that only references textures are embedded in the exported glb file
-		obj.select_set(True)
-		
-		export_filename = os.path.join(export_path, f"{obj.name}.glb")
-		bpy.ops.export_scene.gltf(filepath=export_filename, export_format=export_format, use_selection=True, export_image_format=export_image_format)
+	bpy.ops.export_scene.gltf(filepath = export_filename, 
+							  export_format = export_format,
+							  use_selection = True,
+							  export_image_format = export_image_format)
+	
+	print("Exported: " + export_filename)
 
-		obj.select_set(False)
+# Restore original selection
+for obj in original_selected_objects:
+	obj.select_set(True)
 
-	# Restore original selection
-	for obj in original_selected_objects:
-		obj.select_set(True)
-		
-'''
-		
-
-material="cloth"
-suffix="convcol"
-selected_objects = bpy.context.selected_objects
-
-for obj in selected_objects:
-	if "SM_" in obj.name:
-		base_name = obj.name.replace("SM_", "")
-		if obj.type == "MESH":
-			# obj.data.name = f"M_{base_name}-{material}-{suffix}"
-			obj.data.name = f"M_{base_name}"
-'''
