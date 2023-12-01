@@ -115,6 +115,8 @@ var phys_material_map = {
 	"-wood": preload("res://addons/StandardAssets/PhysicsMaterial/phys_wood.tres") as PhysicsMaterial,
 }
 
+var collision_options = [ "-gbx", "-gsp", "-gcp", "-gcx", "-gcc" ]
+
 func _post_import(scene : Node):
 	
 	print("_post_import for: " + get_source_file())
@@ -127,8 +129,16 @@ func _post_import(scene : Node):
 	
 	for node in scene.get_children():
 		if node is MeshInstance3D:
+			
 			var prefix = node.name.split("_", false, 1)[0]
 			if prefix == "SM":
+				
+				print("In node: " + node.name)
+				
+				var object_name = node.name.split("_", false, 1)[1]
+				if "-" in object_name:
+					object_name = object_name.split("-", false, 1)[0]
+				print("Object name: " + object_name)
 				
 				# If multiple top level nodes exist, then the prefab name
 				# will be set to the name of the top node in Blender.
@@ -138,44 +148,101 @@ func _post_import(scene : Node):
 				# Does nothing if a material is not found
 				assign_external_material(node)
 				
+				# If collision options exist, convert MeshInstance3D to 
+				# StaticBody3D with an appropriate CollisionShape3D
 				var children = node.get_children()
+				var i = -1
 				for child in children:
-					print("Child: " + child.name)
+					i += 1
+					print("Processing: " + child.name)
 					
-					# Is the child object a custom collision mesh?
-					if array_contains_substring(child.name, phys_material_map.keys()):
+					var col_suffix = array_contains_substring(child.name, collision_options)
+					var phys_material = array_contains_substring(child.name, phys_material_map.keys())
+					
+					if col_suffix != "":
+						if not child is MeshInstance3D:
+							print("Child node is not a MeshInstance3D. Does this make sense?")
+							continue
 						
-						var object_name_with_prefix = child.name.split("-", false, 1)[0]
+						print("Collision option detected: " + col_suffix)
 						
-						# TODO: Convert child object depending on the mesh suffix
+						var static_body = StaticBody3D.new()
+						var collision_shape = CollisionShape3D.new()
 						
-						# 1) Delete the existing child object (it should be a MeshInstance3D node)
-						# 2) Create a StaticBody3D node in its place
-						# 3) Create a CollisionShape3D node as a child to the StaticBody3D node.
-						# 4) Assign collision mesh to the CollisionShape3D node depending on the suffix present.
-						# 5) Assign physics material by calling assign_physics_material(node) where node is the StaticBody3D node.
+						static_body.name = "SB_" + object_name + col_suffix
+						collision_shape.name = "CS_" + object_name + col_suffix
+						if phys_material != "":
+							static_body.name += phys_material
+							collision_shape.name += phys_material
+						static_body.name += "_" + str(i)
+						collision_shape.name += "_" + str(i)
 						
-						"""
-						Custom suffixes represent: box, sphere, capsule, convex, concave mesh colliders 
-						respectively,
+						var mesh = child.mesh
+						var bbox = mesh.get_aabb()
+						var shape
+						
+						scene.add_child(static_body)
+						static_body.set_owner(scene)
+						
+						static_body.add_child(collision_shape)
+						collision_shape.set_owner(scene)
+						
+						static_body.transform.origin = child.transform.origin
+						
+						print("static_body name: " + static_body.name)
+						print("collision_shape name: " + collision_shape.name)
+						
+						match col_suffix:
+							"-gbx":
+								shape = BoxShape3D.new()
+								shape.extents = bbox.size * 0.5
+							"-gsp":
+								shape = SphereShape3D.new()
+								shape.radius = max(bbox.size.x, bbox.size.y, bbox.size.z) * 0.5
+							"-gcp":
+								shape = CapsuleShape3D.new()
+								shape.radius = bbox.size.z * 0.5
+								shape.height = bbox.size.y# - (shape.radius * 2.0)
+							"-gcx":
+								shape = ConvexPolygonShape3D.new()
+								shape.set_points(mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX])
+							"-gcc":
+								shape = ConcavePolygonShape3D.new()
+								
+								var arrays = mesh.surface_get_arrays(0)
+								var vertices = arrays[Mesh.ARRAY_VERTEX]
+								var indices = arrays[Mesh.ARRAY_INDEX]
 
-							-gbx
-							-gsp
-							-gcp
-							-gcx
-							-gcc
-						"""
-	
+								var faces = PackedVector3Array()
+								for j in range(0, indices.size(), 3):
+									faces.append(vertices[indices[j]])
+									faces.append(vertices[indices[j + 1]])
+									faces.append(vertices[indices[j + 2]])
+
+								shape.set_faces(faces)
+						
+						collision_shape.shape = shape
+						
+						assign_physics_material(static_body)
+						
+						child.get_parent().remove_child(child)
+						child.free()
+					
+					else:
+						print("Collision option not found.")
+			else:
+				print("Supported prefix not found.")
+		
 	scene.name = "PF_" + object_name_without_prefix_or_suffix + "-n1"
 	print("Finished importing: " + scene.name)
 	
 	return scene
 
-func array_contains_substring(_name: String, possible_options: Array) -> bool:
+func array_contains_substring(_name: String, possible_options: Array) -> String:
 	for option in possible_options:
 		if _name.find(option) != -1:
-			return true
-	return false
+			return option
+	return ""
 
 func assign_external_material(_node: Node3D):
 	
@@ -204,18 +271,24 @@ func assign_external_material(_node: Node3D):
 				var material_resource = ResourceLoader.load(external_material_path) as Material
 				
 				if material_resource:
+					print("Material assigned: " + material_resource.resource_name)
 					_node.mesh.surface_set_material(0, material_resource)
+				else:
+					print("Material not found.")
 			
 		else:
 			print("JSON Parse Error: ", error_code)
 		
 		file.close()
+	else:
+		print("File not found: " + file_path)
 
 func assign_physics_material(_node: Node3D):
 	# Lookup and assign physics material from the suffix
 	for key in phys_material_map.keys():
 		if key in _node.name:
 			_node.physics_material_override = phys_material_map[key]
+			print("Physics material assigned: " + key)
 			break
 
 func search_material_resource(material_name: String, start_dir: String = "res://", mi_prefix: String = "MI_") -> String:
@@ -229,10 +302,10 @@ func search_material_resource(material_name: String, start_dir: String = "res://
 			if dir.current_is_dir():
 				var result = search_material_resource(material_name, full_path + "/")
 				if result:
-					return result
+					return result  # Step into directory
 			else:
 				if file_name.find(material_name) != -1 and file_name.ends_with(".tres") and file_name.begins_with(mi_prefix):
-					print("Found material, returning: " + full_path)
+					print("Found material, returning path: " + full_path)
 					return full_path
 			file_name = dir.get_next()
 	return ""
