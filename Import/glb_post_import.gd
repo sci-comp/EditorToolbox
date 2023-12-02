@@ -146,7 +146,7 @@ func _post_import(scene : Node):
 					object_name_without_prefix_or_suffix = node.name.split("_", false, 1)[1]
 				
 				# Does nothing if a material is not found
-				assign_external_material(node)
+				assign_external_material(node, object_name)
 				
 				# If collision options exist, convert MeshInstance3D to 
 				# StaticBody3D with an appropriate CollisionShape3D
@@ -244,7 +244,7 @@ func array_contains_substring(_name: String, possible_options: Array) -> String:
 			return option
 	return ""
 
-func assign_external_material(_node: Node3D):
+func assign_external_material(_node: Node3D, _object_name: String):
 	
 	var file_path = get_source_file()
 	var file = FileAccess.open(file_path, FileAccess.READ)
@@ -262,20 +262,26 @@ func assign_external_material(_node: Node3D):
 		
 		if error_code == OK:
 			
+			# Extract material name from the glb
 			var parsed_json_data = json.get_data()
-			var material_name_from_glb = parsed_json_data["materials"][0]["name"]
-			var external_material_path = search_material_resource(material_name_from_glb)
+			var first_object_mesh_index = parsed_json_data["nodes"][0].get("mesh", -1)
+			var material_idx
+			for item in parsed_json_data["meshes"]:
+				if item["name"] == "M_" + _object_name:
+					material_idx = item["primitives"][0]["material"]
+			var material_name_from_glb = parsed_json_data["materials"][material_idx]["name"]
+			print("Material name from glb: " + material_name_from_glb)
 			
+			var external_material_path = search_material_resource(material_name_from_glb)
 			if external_material_path:
-				
 				var material_resource = ResourceLoader.load(external_material_path) as Material
-				
 				if material_resource:
 					print("Material assigned: " + material_resource.resource_name)
 					_node.mesh.surface_set_material(0, material_resource)
 				else:
-					print("Material not found.")
-			
+					print("Material unsuccesfully loaded.")
+			else:
+				print("Path for external material not found.")
 		else:
 			print("JSON Parse Error: ", error_code)
 		
@@ -308,6 +314,8 @@ func search_material_resource(material_name: String, start_dir: String = "res://
 					print("Found material, returning path: " + full_path)
 					return full_path
 			file_name = dir.get_next()
+	else:
+		print("Unable to open directory: " + dir)
 	return ""
 
 

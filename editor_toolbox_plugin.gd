@@ -25,10 +25,14 @@ func _enter_tree():
 	submenu_creation = PopupMenu.new()
 	submenu_creation.connect("id_pressed", Callable(self, "_on_creation_submenu_item_selected"))
 	add_tool_submenu_item("FileSystem", submenu_creation)
-	submenu_creation.add_item("Create BaseMaterial3D (Ctrl+M)", 0)
-	submenu_creation.add_item("Instantiate in a row (Ctrl+1)", 1)
-	submenu_creation.add_item("Print selected paths (Alt+P)", 2)
-	submenu_creation.add_item("Reimport glb (Ctrl+Alt+I)", 3)
+	submenu_creation.add_item("Capitalize selected paths", 0)
+	submenu_creation.add_item("Create BaseMaterial3D (Ctrl+M)", 1)
+	submenu_creation.add_item("Instantiate in a row (Ctrl+1)", 2)
+	submenu_creation.add_item("Print selected paths (Alt+P)", 3)
+	submenu_creation.add_item("Reimport glb (Ctrl+Alt+I)", 4)
+	submenu_creation.add_item("Replace term", 5)
+	submenu_creation.add_item("To upper for prefixes of selected paths", 6)
+	
 
 	# -----------------------------------------------------------------
 	# -- Scene --------------------------------------------------------
@@ -123,14 +127,25 @@ func show_about_window():
 # ------------------------------------------------------------------------------
 
 func _on_creation_submenu_item_selected(id: int):
+	
 	if id == 0:
-		create_base_material_3d()
+		capitalize_selected_paths()
 	if id == 1:
-		instantiate_in_a_row()
+		create_base_material_3d()
 	if id == 2:
-		print_selected_paths()
+		instantiate_in_a_row()
 	if id == 3:
+		print_selected_paths()
+	if id == 4:
 		reimport_glb()
+	if id == 5:
+		replace_term()
+	if id == 6:
+		to_upper_for_prefixes_of_selected_paths()
+
+func capitalize_selected_paths():
+	var _instance = preload("res://addons/EditorToolbox/FileSystem/capitalize_selected_paths.gd").new()
+	_instance.execute()
 
 func create_base_material_3d():
 	reusable_instance = preload("res://addons/EditorToolbox/FileSystem/create_base_material_3D.gd").new()
@@ -146,11 +161,21 @@ func print_selected_paths():
 	var _instance = preload("res://addons/EditorToolbox/FileSystem/print_selected_paths.gd").new()
 	_instance.execute()
 
+func replace_term():
+	reusable_instance = preload("res://addons/EditorToolbox/FileSystem/replace_term.gd").new()
+	add_child(reusable_instance)
+	reusable_instance.done.connect(_on_reusable_instance_done)
+	reusable_instance.execute()
+
 func reimport_glb():
 	reusable_instance = preload("res://addons/EditorToolbox/FileSystem/reimport_glb.gd").new()
 	add_child(reusable_instance)
 	reusable_instance.done.connect(_on_reusable_instance_done)
 	reusable_instance.execute()
+
+func to_upper_for_prefixes_of_selected_paths():
+	var _instance = preload("res://addons/EditorToolbox/FileSystem/to_upper_for_prefixes_of_selected_paths.gd").new()
+	_instance.execute()
 
 # ------------------------------------------------------------------------------
 # -- Scene ---------------------------------------------------------------------
