@@ -45,6 +45,7 @@ func _enter_tree():
 	submenu_creation.add_item("Print selected node names (Alt+N)", 1)
 	submenu_creation.add_item("Reset node names (Alt+R)", 2)
 	submenu_creation.add_item("Reset transform (Ctrl+T)", 3)
+	submenu_creation.add_item("Replace node", 4)
 
 func _exit_tree():
 	remove_tool_menu_item("Command")
@@ -190,6 +191,8 @@ func _on_scene_submenu_item_selected(id: int):
 		reset_node_name()
 	if id == 3:
 		reset_transform()
+	if id == 4:
+		replace_node()
 
 func alphabetize_nodes():
 	var _instance = preload("res://addons/EditorToolbox/Scene/alphabetize_nodes.gd").new()
@@ -206,7 +209,11 @@ func reset_node_name():
 func reset_transform():
 	var _instance = preload("res://addons/EditorToolbox/Scene/reset_transform.gd").new()
 	_instance.execute()
-	
+
+func replace_node():
+	var _instance = preload("res://addons/EditorToolbox/Scene/replace_node.gd").new()
+	_instance.execute()
+
 # ------------------------------------------------------------------------------
 
 func _on_reusable_instance_done():
