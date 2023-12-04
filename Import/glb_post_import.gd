@@ -265,23 +265,38 @@ func assign_external_material(_node: Node3D, _object_name: String):
 			# Extract material name from the glb
 			var parsed_json_data = json.get_data()
 			var first_object_mesh_index = parsed_json_data["nodes"][0].get("mesh", -1)
-			var material_idx
+			
+			# parsed_json_data["meshes"] contains an index for the material 
+			# assigned to the given submesh
+			var material_indexes = []
+			var material_names = []
+			
 			for item in parsed_json_data["meshes"]:
 				if item["name"] == "M_" + _object_name:
-					material_idx = item["primitives"][0]["material"]
-			var material_name_from_glb = parsed_json_data["materials"][material_idx]["name"]
-			print("Material name from glb: " + material_name_from_glb)
+					
+					for submesh in item["primitives"]:
+						var material_idx = submesh["material"]
+						material_indexes.append(material_idx)
+						material_names.append(parsed_json_data["materials"][material_idx]["name"])
+						
+					print("Material names from glb: " + str(material_names))
 			
-			var external_material_path = search_material_resource(material_name_from_glb)
-			if external_material_path:
-				var material_resource = ResourceLoader.load(external_material_path) as Material
-				if material_resource:
-					print("Material assigned: " + material_resource.resource_name)
-					_node.mesh.surface_set_material(0, material_resource)
+			var external_material_paths = []
+			for material_name in material_names:
+				external_material_paths.append(search_material_resource(material_name))
+			
+			var k = 0
+			for external_material_path in external_material_paths:
+				if external_material_path:
+					var material_resource = ResourceLoader.load(external_material_path) as Material
+					if material_resource:
+						print("Material assigned: " + material_resource.resource_name)
+						_node.mesh.surface_set_material(k, material_resource)
+					else:
+						print("Material unsuccesfully loaded.")
 				else:
-					print("Material unsuccesfully loaded.")
-			else:
-				print("Path for external material not found.")
+					print("Path for external material not found.")
+				k += 1
 		else:
 			print("JSON Parse Error: ", error_code)
 		
