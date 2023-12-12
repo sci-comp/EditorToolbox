@@ -51,6 +51,7 @@ assigned,
 	-glass
 	-ice
 	-metal
+	-organic
 	-plastic
 	-stone
 	-wood
@@ -110,6 +111,7 @@ var phys_material_map = {
 	"-glass": preload("res://addons/StandardAssets/PhysicsMaterial/phys_glass.tres") as PhysicsMaterial,
 	"-ice": preload("res://addons/StandardAssets/PhysicsMaterial/phys_ice.tres") as PhysicsMaterial,
 	"-metal": preload("res://addons/StandardAssets/PhysicsMaterial/phys_metal.tres") as PhysicsMaterial,
+	"-organic": preload("res://addons/StandardAssets/PhysicsMaterial/phys_organic.tres") as PhysicsMaterial,
 	"-plastic": preload("res://addons/StandardAssets/PhysicsMaterial/phys_plastic.tres") as PhysicsMaterial,
 	"-stone": preload("res://addons/StandardAssets/PhysicsMaterial/phys_stone.tres") as PhysicsMaterial,
 	"-wood": preload("res://addons/StandardAssets/PhysicsMaterial/phys_wood.tres") as PhysicsMaterial,
@@ -119,124 +121,157 @@ var collision_options = [ "-gbx", "-gsp", "-gcp", "-gcx", "-gcc" ]
 
 func _post_import(scene : Node):
 	
-	print("_post_import for: " + get_source_file())
+	print("Beginning post import for file: " + get_source_file())
 	
 	var pattern = "SM_(\\w+)_M_\\1.*"  # Mesh naming pattern from Blender
 	var regex = RegEx.new()
 	regex.compile(pattern)
 	
-	var object_name_without_prefix_or_suffix = ""
+	var scene_name_without_prefix_or_suffix = ""
 	
-	for node in scene.get_children():
-		if node is MeshInstance3D:
-			
-			var prefix = node.name.split("_", false, 1)[0]
-			if prefix == "SM":
+	for possible_static_mesh in scene.get_children():
+		print("Processing node: " + possible_static_mesh.name)
+		if possible_static_mesh is MeshInstance3D:
+			var _prefix = possible_static_mesh.name.split("_", false, 1)[0]
+			if _prefix == "SM":
+				print("This node is recognized as a static mesh.")
+				var static_mesh = possible_static_mesh
 				
-				print("In node: " + node.name)
+				if (scene_name_without_prefix_or_suffix == ""):
+					var scene_name_without_prefix = static_mesh.name.split("_", false, 1)[1]
+					if scene_name_without_prefix.contains("-"):
+						scene_name_without_prefix_or_suffix = scene_name_without_prefix.splot("-", false, 1)[0]
+					else:
+						scene_name_without_prefix_or_suffix = scene_name_without_prefix
+				else:
+					print("Multiple root level static mesh have been detected. The name of this
+						   prefab will be named after the first static mesh encountered.")
 				
-				var object_name = node.name.split("_", false, 1)[1]
+				# Assumed naming convention for mesh instances: 
+				#    SM_Crate_01-gbx-wood_001
+				#    SM: static mesh indication
+				#    Crate_01: object name
+				#    gbx: collision option
+				#    wood: physics material option
+				#    _001: object count
+				
+				var object_name = static_mesh.name.split("_", false, 1)[1]
+				var sub_object_count = ""
 				if "-" in object_name:
 					object_name = object_name.split("-", false, 1)[0]
+					var object_tail = object_name.split("-", false, 1)[1]
+					if object_tail.contains("_"):
+						sub_object_count = object_tail.split("_", false, 1)[1]
+						
 				print("Object name: " + object_name)
-				
-				# If multiple top level nodes exist, then the prefab name
-				# will be set to the name of the top node in Blender.
-				if (object_name_without_prefix_or_suffix == ""):
-					object_name_without_prefix_or_suffix = node.name.split("_", false, 1)[1]
+				if not sub_object_count == "":
+					print("Sub-object count: " + sub_object_count)
 				
 				# Does nothing if a material is not found
-				assign_external_material(node, object_name)
+				assign_external_material(static_mesh, object_name)
 				
 				# If collision options exist, convert MeshInstance3D to 
 				# StaticBody3D with an appropriate CollisionShape3D
-				var children = node.get_children()
+				var children = static_mesh.get_children()
 				var i = -1
 				for child in children:
+					
 					i += 1
+					
 					print("Processing: " + child.name)
 					
+					# -- Collision----------------------------------------------
+					# Possible options exist when a collision option is found:
+					# - Physics material
 					var col_suffix = array_contains_substring(child.name, collision_options)
-					var phys_material = array_contains_substring(child.name, phys_material_map.keys())
-					
 					if col_suffix != "":
 						if not child is MeshInstance3D:
-							print("Child node is not a MeshInstance3D. Does this make sense?")
-							continue
-						
-						print("Collision option detected: " + col_suffix)
-						
-						var static_body = StaticBody3D.new()
-						var collision_shape = CollisionShape3D.new()
-						
-						static_body.name = "SB_" + object_name + col_suffix
-						collision_shape.name = "CS_" + object_name + col_suffix
-						if phys_material != "":
-							static_body.name += phys_material
-							collision_shape.name += phys_material
-						static_body.name += "_" + str(i)
-						collision_shape.name += "_" + str(i)
-						
-						var mesh = child.mesh
-						var bbox = mesh.get_aabb()
-						var shape
-						
-						scene.add_child(static_body)
-						static_body.set_owner(scene)
-						
-						static_body.add_child(collision_shape)
-						collision_shape.set_owner(scene)
-						
-						static_body.transform.origin = child.transform.origin
-						
-						print("static_body name: " + static_body.name)
-						print("collision_shape name: " + collision_shape.name)
-						
-						match col_suffix:
-							"-gbx":
-								shape = BoxShape3D.new()
-								shape.extents = bbox.size * 0.5
-							"-gsp":
-								shape = SphereShape3D.new()
-								shape.radius = max(bbox.size.x, bbox.size.y, bbox.size.z) * 0.5
-							"-gcp":
-								shape = CapsuleShape3D.new()
-								shape.radius = bbox.size.z * 0.5
-								shape.height = bbox.size.y# - (shape.radius * 2.0)
-							"-gcx":
-								shape = ConvexPolygonShape3D.new()
-								shape.set_points(mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX])
-							"-gcc":
-								shape = ConcavePolygonShape3D.new()
-								
-								var arrays = mesh.surface_get_arrays(0)
-								var vertices = arrays[Mesh.ARRAY_VERTEX]
-								var indices = arrays[Mesh.ARRAY_INDEX]
-
-								var faces = PackedVector3Array()
-								for j in range(0, indices.size(), 3):
-									faces.append(vertices[indices[j]])
-									faces.append(vertices[indices[j + 1]])
-									faces.append(vertices[indices[j + 2]])
-
-								shape.set_faces(faces)
-						
-						collision_shape.shape = shape
-						
-						assign_physics_material(static_body)
-						
-						child.get_parent().remove_child(child)
-						child.free()
-					
-					else:
-						print("Collision option not found.")
+							print("Collision option detected on a node that is not a MeshInstance3d. 
+								   This is a logical error, skipping node.")
+						else:
+							print("Collision option detected: " + col_suffix)
+							generate_collision(scene, child, object_name, col_suffix, sub_object_count)
+							
+							# Note: The original child is freed when a collision option is found
+							child.get_parent().remove_child(child)
+							child.free()
+					# ----------------------------------------------------------
+			
 			else:
 				print("Supported prefix not found.")
 		
-	scene.name = "PF_" + object_name_without_prefix_or_suffix + "-n1"
+	scene.name = "PF_" + scene_name_without_prefix_or_suffix + "-n1"
 	print("Finished importing: " + scene.name)
 	
 	return scene
+
+func generate_collision(_scene: Node3D, _node: Node3D, _object_name: String, _col_suffix: String, object_count: String):
+	
+	var phys_material = array_contains_substring(_node.name, phys_material_map.keys())
+	
+	var static_body = StaticBody3D.new()
+	var collision_shape = CollisionShape3D.new()
+	
+	# Assign names
+	static_body.name = "SB_" + _object_name + _col_suffix
+	collision_shape.name = "CS_" + _object_name + _col_suffix
+	if phys_material != "":
+		static_body.name += phys_material
+		collision_shape.name += phys_material
+	if not object_count == "":
+		static_body.name += "_" + str(object_count)
+		collision_shape.name += "_" + str(object_count)
+	
+	var mesh = _node.mesh
+	var bbox = mesh.get_aabb()
+	var origin = _node.transform
+	var shape
+	
+	_scene.add_child(static_body)
+	static_body.set_owner(_scene)
+	
+	static_body.add_child(collision_shape)
+	collision_shape.set_owner(_scene)
+	
+	static_body.transform.origin = _node.transform.origin
+	
+	print("static_body name: " + static_body.name)
+	print("collision_shape name: " + collision_shape.name)
+	
+	match _col_suffix:
+		"-gbx":
+			shape = BoxShape3D.new()
+			shape.extents = bbox.size * 0.5
+			collision_shape.position.y = bbox.position.y + (bbox.size.y * .5)
+		"-gsp":
+			shape = SphereShape3D.new()
+			shape.radius = max(bbox.size.x, bbox.size.y, bbox.size.z) * 0.5
+		"-gcp":
+			shape = CapsuleShape3D.new()
+			shape.radius = bbox.size.z * 0.5
+			shape.height = bbox.size.y
+		"-gcx":
+			shape = ConvexPolygonShape3D.new()
+			shape.set_points(mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX])
+		"-gcc":
+			shape = ConcavePolygonShape3D.new()
+			
+			var arrays = mesh.surface_get_arrays(0)
+			var vertices = arrays[Mesh.ARRAY_VERTEX]
+			var indices = arrays[Mesh.ARRAY_INDEX]
+
+			var faces = PackedVector3Array()
+			for j in range(0, indices.size(), 3):
+				faces.append(vertices[indices[j]])
+				faces.append(vertices[indices[j + 1]])
+				faces.append(vertices[indices[j + 2]])
+			shape.set_faces(faces)
+		"_":
+				print("Error: Collision option not matched.")
+		
+	collision_shape.shape = shape
+		
+	assign_physics_material(static_body)
 
 func array_contains_substring(_name: String, possible_options: Array) -> String:
 	for option in possible_options:
@@ -290,7 +325,7 @@ func assign_external_material(_node: Node3D, _object_name: String):
 				if external_material_path:
 					var material_resource = ResourceLoader.load(external_material_path) as Material
 					if material_resource:
-						print("Material assigned: " + material_resource.resource_name)
+						print("Material assigned: " + external_material_path)
 						_node.mesh.surface_set_material(k, material_resource)
 					else:
 						print("Material unsuccesfully loaded.")
@@ -332,5 +367,4 @@ func search_material_resource(material_name: String, start_dir: String = "res://
 	else:
 		print("Unable to open directory: " + dir)
 	return ""
-
 
