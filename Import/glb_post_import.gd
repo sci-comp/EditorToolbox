@@ -105,7 +105,7 @@ Scene Collection in Blender
 @tool
 extends EditorScenePostImport
 
-var phys_material_map = {
+var phys_material_to_resource_map = {
 	"-cloth": preload("res://addons/StandardAssets/PhysicsMaterial/phys_cloth.tres") as PhysicsMaterial,
 	"-dirt": preload("res://addons/StandardAssets/PhysicsMaterial/phys_dirt.tres") as PhysicsMaterial,
 	"-glass": preload("res://addons/StandardAssets/PhysicsMaterial/phys_glass.tres") as PhysicsMaterial,
@@ -115,6 +115,18 @@ var phys_material_map = {
 	"-plastic": preload("res://addons/StandardAssets/PhysicsMaterial/phys_plastic.tres") as PhysicsMaterial,
 	"-stone": preload("res://addons/StandardAssets/PhysicsMaterial/phys_stone.tres") as PhysicsMaterial,
 	"-wood": preload("res://addons/StandardAssets/PhysicsMaterial/phys_wood.tres") as PhysicsMaterial,
+}
+
+var phys_material_to_layer_map = {
+	"-cloth": 1 << 24 - 1,
+	"-dirt": 1 << 25 - 1,
+	"-glass": 1 << 26 - 1,
+	"-ice": 1 << 27 - 1,
+	"-metal": 1 << 28 - 1,
+	"-organic": 1 << 29 - 1,
+	"-plastic": 1 << 30 - 1,
+	"-stone": 1 << 31 - 1,
+	"-wood": 1 << 32 - 1,
 }
 
 var collision_options = [ "-gbx", "-gsp", "-gcp", "-gcx", "-gcc" ]
@@ -190,7 +202,12 @@ func _post_import(scene : Node):
 								   This is a logical error, skipping node.")
 						else:
 							print("Collision option detected: " + col_suffix)
-							generate_collision(scene, child, object_name, col_suffix, sub_object_count)
+							
+							var paintable = false
+							if "-L2" in child.name:
+								paintable = true
+								
+							generate_collision(scene, child, object_name, col_suffix, sub_object_count, paintable)
 							
 							# Note: The original child is freed when a collision option is found
 							child.get_parent().remove_child(child)
@@ -205,9 +222,9 @@ func _post_import(scene : Node):
 	
 	return scene
 
-func generate_collision(_scene: Node3D, _node: Node3D, _object_name: String, _col_suffix: String, object_count: String):
+func generate_collision(_scene: Node3D, _node: Node3D, _object_name: String, _col_suffix: String, _object_count: String, _paintable: bool):
 	
-	var phys_material = array_contains_substring(_node.name, phys_material_map.keys())
+	var phys_material = array_contains_substring(_node.name, phys_material_to_resource_map.keys())
 	
 	var static_body = StaticBody3D.new()
 	var collision_shape = CollisionShape3D.new()
@@ -218,9 +235,9 @@ func generate_collision(_scene: Node3D, _node: Node3D, _object_name: String, _co
 	if phys_material != "":
 		static_body.name += phys_material
 		collision_shape.name += phys_material
-	if not object_count == "":
-		static_body.name += "_" + str(object_count)
-		collision_shape.name += "_" + str(object_count)
+	if not _object_count == "":
+		static_body.name += "_" + str(_object_count)
+		collision_shape.name += "_" + str(_object_count)
 	
 	var mesh = _node.mesh
 	var bbox = mesh.get_aabb()
@@ -272,6 +289,10 @@ func generate_collision(_scene: Node3D, _node: Node3D, _object_name: String, _co
 	collision_shape.shape = shape
 		
 	assign_physics_material(static_body)
+	
+	if _paintable:
+		print("This mesh is paintable.")
+		static_body.collision_layer = static_body.collision_layer | 1 << 1
 
 func array_contains_substring(_name: String, possible_options: Array) -> String:
 	for option in possible_options:
@@ -341,9 +362,10 @@ func assign_external_material(_node: Node3D, _object_name: String):
 
 func assign_physics_material(_node: Node3D):
 	# Lookup and assign physics material from the suffix
-	for key in phys_material_map.keys():
+	for key in phys_material_to_resource_map.keys():
 		if key in _node.name:
-			_node.physics_material_override = phys_material_map[key]
+			_node.physics_material_override = phys_material_to_resource_map[key]
+			_node.collision_layer = _node.collision_layer | phys_material_to_layer_map[key]
 			print("Physics material assigned: " + key)
 			break
 
