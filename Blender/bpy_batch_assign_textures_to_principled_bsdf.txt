@@ -1,0 +1,71 @@
+import bpy
+import os
+
+texture_root_path = bpy.path.abspath("//Texture\Rock")
+
+for material in bpy.data.materials:
+	material_name_without_prefix = material.name.split("_", 1)[1]
+	
+	color_file_path = os.path.join(texture_root_path, f"T_{material_name_without_prefix}.png")
+	normal_file_path = os.path.join(texture_root_path, f"T_{material_name_without_prefix}_n.png")
+	
+	print("---------------------")
+	print("Processing material: " + material.name)
+	
+	if material.node_tree:
+		print("Inside node_tree")
+		
+		for n in material.node_tree.nodes:
+			if n.type == "BSDF_PRINCIPLED":
+				print("BSDF_PRINCIPLED node was found")
+				
+				# Try to assign a color texture
+				if (os.path.exists(color_file_path)):
+					print("Color texture path found")
+										
+					# Check for existing Image Texture nodes
+					base_color_input_linked = False
+					for link in material.node_tree.links:
+						if link.to_node == n and link.to_socket.identifier == "Base Color":
+							base_color_input_linked = True
+							break
+						
+					if not base_color_input_linked:
+						base_color_texture = material.node_tree.nodes.new('ShaderNodeTexImage')
+						base_color_texture.image = bpy.data.images.load(color_file_path)
+						base_color_texture.location = (-100, 300)
+												
+						material.node_tree.links.new(base_color_texture.outputs["Color"], n.inputs["Base Color"])
+						print("Color texture assigned.")
+					else:
+						print("Base Color input already linked.")
+						
+				# Try to assign the normal texture
+				if (os.path.exists(normal_file_path)):
+					print("Normal texture path found")
+					
+					# Check for existing Image Texture nodes
+					base_normal_input_linked = False
+					for link in material.node_tree.links:
+						if link.to_node == n and link.to_socket.identifier == "Normal":
+							base_normal_input_linked = True
+							break
+						
+					if not base_normal_input_linked:
+						
+						base_normal_texture = material.node_tree.nodes.new('ShaderNodeTexImage')
+						base_normal_texture.image = bpy.data.images.load(normal_file_path)
+						base_normal_texture.location = (-230, 0)
+						
+						normal_map_node = material.node_tree.nodes.new('ShaderNodeNormalMap')
+						normal_map_node.location = (100, 0)  
+						material.node_tree.links.new(base_normal_texture.outputs["Color"], normal_map_node.inputs["Color"])
+
+						material.node_tree.links.new(normal_map_node.outputs["Normal"], n.inputs["Normal"])
+						print("Normal texture assigned.")
+					else:
+						print("Normal input already linked.")
+						
+					
+				else:
+					print("Texture not found at path: " + normal_file_path)
