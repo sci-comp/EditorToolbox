@@ -41,11 +41,12 @@ func _enter_tree():
 	submenu_creation = PopupMenu.new()
 	submenu_creation.connect("id_pressed", Callable(self, "_on_scene_submenu_item_selected"))
 	add_tool_submenu_item("Scene", submenu_creation)
-	submenu_creation.add_item("Alphabetize children of selected nodes (Alt+A)", 0)
-	submenu_creation.add_item("Print selected node names (Alt+N)", 1)
-	submenu_creation.add_item("Reset node names (Alt+R)", 2)
-	submenu_creation.add_item("Reset transform (Ctrl+T)", 3)
-	submenu_creation.add_item("Replace node", 4)
+	submenu_creation.add_item("Add prefix to selected in scene", 0)
+	submenu_creation.add_item("Alphabetize children of selected nodes (Alt+A)", 1)
+	submenu_creation.add_item("Print selected node names (Alt+N)", 2)
+	submenu_creation.add_item("Reset node names (Alt+R)", 3)
+	submenu_creation.add_item("Reset transform (Ctrl+T)", 4)
+	submenu_creation.add_item("Replace node", 5)
 
 func _exit_tree():
 	remove_tool_menu_item("Command")
@@ -184,7 +185,9 @@ func to_upper_for_prefixes_of_selected_paths():
 
 func _on_scene_submenu_item_selected(id: int):
 	if id == 0:
-		alphabetize_nodes
+		add_prefix_to_selected_in_scene()
+	if id == 0:
+		alphabetize_nodes()
 	if id == 1:
 		print_selected_node_names()
 	if id == 2:
@@ -193,6 +196,12 @@ func _on_scene_submenu_item_selected(id: int):
 		reset_transform()
 	if id == 4:
 		replace_node()
+
+func add_prefix_to_selected_in_scene():
+	reusable_instance = preload("res://addons/EditorToolbox/Scene/add_prefix_to_selected_in_scene.gd").new()
+	add_child(reusable_instance)
+	reusable_instance.done.connect(_on_reusable_instance_done)
+	reusable_instance.execute()
 
 func alphabetize_nodes():
 	var _instance = preload("res://addons/EditorToolbox/Scene/alphabetize_nodes.gd").new()

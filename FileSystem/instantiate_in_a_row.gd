@@ -1,6 +1,8 @@
 @tool
 extends EditorPlugin
 
+var spaced_apart = 10
+
 func execute():
 	var selected_paths = get_editor_interface().get_selected_paths()
 	
@@ -40,7 +42,7 @@ func execute():
 			instantiated_nodes.append(instance)
 			instance.owner = current_scene
 			instance.global_transform.origin = Vector3(x_offset, 0, 0)
-			x_offset += 1
+			x_offset += spaced_apart
 			scenes_instantiated += 1
 			
 			print("Instantiated: " + instance.name)

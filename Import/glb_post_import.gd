@@ -135,9 +135,9 @@ func _post_import(scene : Node):
 	
 	print("Beginning post import for file: " + get_source_file())
 	
-	var pattern = "SM_(\\w+)_M_\\1.*"  # Mesh naming pattern from Blender
-	var regex = RegEx.new()
-	regex.compile(pattern)
+	#var pattern = "SM_(\\w+)_M_\\1.*"  # Mesh naming pattern from Blender
+	#var regex = RegEx.new()
+	#regex.compile(pattern)
 	
 	var scene_name_without_prefix_or_suffix = ""
 	
