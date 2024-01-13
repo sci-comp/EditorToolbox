@@ -41,6 +41,5 @@ func show_about_window():
 # ------------------------------------------------------------------------------
 
 func _on_reusable_instance_done():
-	print("Freeing popup instance")
 	reusable_instance.queue_free()
 
