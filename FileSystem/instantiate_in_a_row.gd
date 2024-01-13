@@ -1,7 +1,7 @@
 @tool
 extends EditorPlugin
 
-var spaced_apart = 10
+var spaced_apart = 15
 
 func execute():
 	var selected_paths = get_editor_interface().get_selected_paths()

@@ -8,6 +8,8 @@ var field_new_term : LineEdit
 var ok_button : Button
 var popup_instance : PopupPanel
 
+var utilities = load("res://addons/EditorToolbox/editor_toolbox_utilities.gd")
+
 signal done
 
 func execute():
@@ -48,7 +50,7 @@ func execute():
 	
 	# Ok button
 	ok_button = Button.new()
-	ok_button.text = "Replace term in selected paths"
+	ok_button.text = "Replace term in selected nodes"
 	ok_button.pressed.connect(_on_ok_pressed)
 	
 	vbox.add_child(ok_button)
@@ -60,42 +62,20 @@ func _on_ok_pressed():
 	popup_instance.queue_free()
 	emit_signal("done")
 
-
-
 func okay_was_pressed():
 	
-	var selected_paths = get_editor_interface().get_selected_paths()
+	var selected_nodes = get_editor_interface().get_selection()
 	
-	var editor = get_editor_interface()
-	var file_sys = editor.get_resource_filesystem()
-	
-	for path in selected_paths:
+	for selected in selected_nodes.get_selected_nodes():
 		
-		var file_name = path.get_file()
-		var base_name = file_name.get_basename()
+		print("Trying to rename: " + selected.name)
 		
-		var new_file_name = ""
-		if file_name.contains(field_existing_term.text):
+		var new_name = ""
+		if selected.name.contains(field_existing_term.text):
+			new_name = selected.name.replace(field_existing_term.text, field_new_term.text)
 			
-			new_file_name = file_name.replace(field_existing_term.text, field_new_term.text)
+			var unique_name = utilities.get_unique_name(new_name, selected.get_parent())
+			selected.name = unique_name
 			
-			print("new_file_name: " + new_file_name)
-			
-		
-		var dir_access = DirAccess.open(path.get_base_dir())
-		if dir_access.file_exists(file_name):
-			
-			# Rename
-			dir_access.rename(file_name, new_file_name)
-			
-			# Rename .import
-			var import_file = file_name + ".import"
-			var new_import_file = new_file_name + ".import"
-			if dir_access.file_exists(import_file):
-				dir_access.rename(import_file, new_import_file)
-			
-			print("Renamed " + file_name + " to " + new_file_name)
-		else:
-			print("File does not exist: " + file_name)
-	
-	editor.get_resource_filesystem().scan()
+			print("Renamed to: " + selected.name)
+

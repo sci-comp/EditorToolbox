@@ -3,7 +3,7 @@ extends EditorPlugin
 
 signal done
 
-var editor_utilities = preload("res://addons/EditorToolbox/editor_utilities.gd").new()
+var editor_utilities = preload("res://addons/EditorToolbox/editor_toolbox_utilities.gd").new()
 
 func execute():
 	var selected_paths = get_editor_interface().get_selected_paths()

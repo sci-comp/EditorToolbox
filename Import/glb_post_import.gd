@@ -207,7 +207,7 @@ func _post_import(scene : Node):
 							if "-L2" in child.name:
 								paintable = true
 								
-							generate_collision(scene, child, object_name, col_suffix, sub_object_count, paintable)
+							generate_collision(scene, child, child.name, col_suffix, sub_object_count, paintable)
 							
 							# Note: The original child is freed when a collision option is found
 							child.get_parent().remove_child(child)
@@ -230,8 +230,8 @@ func generate_collision(_scene: Node3D, _node: Node3D, _object_name: String, _co
 	var collision_shape = CollisionShape3D.new()
 	
 	# Assign names
-	static_body.name = "SB_" + _object_name + _col_suffix
-	collision_shape.name = "CS_" + _object_name + _col_suffix
+	static_body.name = "SB_" + _object_name
+	collision_shape.name = "CS_" + _object_name
 	if phys_material != "":
 		static_body.name += phys_material
 		collision_shape.name += phys_material
@@ -259,7 +259,9 @@ func generate_collision(_scene: Node3D, _node: Node3D, _object_name: String, _co
 		"-gbx":
 			shape = BoxShape3D.new()
 			shape.extents = bbox.size * 0.5
+			collision_shape.position.x = bbox.position.x + (bbox.size.x * .5)
 			collision_shape.position.y = bbox.position.y + (bbox.size.y * .5)
+			collision_shape.position.z = bbox.position.z + (bbox.size.z * .5)
 		"-gsp":
 			shape = SphereShape3D.new()
 			shape.radius = max(bbox.size.x, bbox.size.y, bbox.size.z) * 0.5
@@ -382,7 +384,7 @@ func search_material_resource(material_name: String, start_dir: String = "res://
 				if result:
 					return result  # Step into directory
 			else:
-				if file_name.find(material_name) != -1 and file_name.ends_with(".tres") and file_name.begins_with(mi_prefix):
+				if (file_name == material_name + ".tres"): # and file_name.ends_with(".tres"): # and file_name.begins_with(mi_prefix):
 					print("Found material, returning path: " + full_path)
 					return full_path
 			file_name = dir.get_next()

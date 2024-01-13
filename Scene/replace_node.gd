@@ -1,6 +1,8 @@
 @tool
 extends EditorPlugin
 
+var utilities = load("res://addons/EditorToolbox/editor_toolbox_utilities.gd")
+
 func execute():
 	"""
 	Replaces each selected node in the Scene with an instance of the selected PackedScene from the FileSystem.
@@ -39,39 +41,9 @@ func execute():
 			parent.add_child(instance)
 			instance.owner = get_editor_interface().get_edited_scene_root()
 		
-			instance.name = get_unique_name(instance.name, parent)
+			instance.name = utilities.get_unique_name(instance.name, parent)
 		
 		node.queue_free()
 		
 		# TODO: Notify that the scene has been altered.
 
-func get_unique_name(base_name: String, parent: Node) -> String:
-	var new_name = base_name
-	var count = 1
-	var ends_with_digit = base_name.match(".*\\d+$")
-	
-	var regex = RegEx.new()
-	regex.compile("^(.*?)(\\d+)$")
-	
-	while parent.has_node(new_name):
-		
-		if ends_with_digit:
-			var result = regex.search(new_name)
-			
-			if result:
-				print(new_name)
-				var name_part = result.get_string(1)
-				var num_part = int(result.get_string(2))
-				print(name_part)
-				print(num_part)
-				new_name = name_part + str(num_part + count)
-				
-			else:
-				new_name = base_name + str(count)
-		else:
-			new_name = base_name + str(count)
-			
-		count += 1
-	
-	return new_name
-	

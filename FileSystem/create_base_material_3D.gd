@@ -12,7 +12,7 @@ var ok_button : Button
 
 signal done
 
-var editor_utilities = preload("res://addons/EditorToolbox/editor_utilities.gd").new()
+var editor_utilities = preload("res://addons/EditorToolbox/editor_toolbox_utilities.gd").new()
 
 func execute():
 	

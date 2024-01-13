@@ -45,9 +45,10 @@ func _enter_tree():
 	submenu_creation.add_item("Add prefix to selected in scene", 0)
 	submenu_creation.add_item("Alphabetize children of selected nodes (Alt+A)", 1)
 	submenu_creation.add_item("Print selected node names (Alt+N)", 2)
-	submenu_creation.add_item("Reset node names (Alt+R)", 3)
-	submenu_creation.add_item("Reset transform (Ctrl+T)", 4)
-	submenu_creation.add_item("Replace node", 5)
+	submenu_creation.add_item("Replace node", 3)
+	submenu_creation.add_item("Replace terms in scene", 4)
+	submenu_creation.add_item("Reset node names (Alt+R)", 5)
+	submenu_creation.add_item("Reset transform (Ctrl+T)", 6)
 
 func _exit_tree():
 	remove_tool_menu_item("Command")
@@ -144,7 +145,7 @@ func _on_creation_submenu_item_selected(id: int):
 	if id == 5:
 		reimport_glb()
 	if id == 6:
-		replace_term()
+		replace_terms_in_file_system()
 	if id == 7:
 		to_upper_for_prefixes_of_selected_paths()
 
@@ -170,8 +171,8 @@ func print_selected_paths():
 	var _instance = preload("res://addons/EditorToolbox/FileSystem/print_selected_paths.gd").new()
 	_instance.execute()
 
-func replace_term():
-	reusable_instance = preload("res://addons/EditorToolbox/FileSystem/replace_term.gd").new()
+func replace_terms_in_file_system():
+	reusable_instance = preload("res://addons/EditorToolbox/FileSystem/replace_terms_in_file_system.gd").new()
 	add_child(reusable_instance)
 	reusable_instance.done.connect(_on_reusable_instance_done)
 	reusable_instance.execute()
@@ -193,16 +194,18 @@ func to_upper_for_prefixes_of_selected_paths():
 func _on_scene_submenu_item_selected(id: int):
 	if id == 0:
 		add_prefix_to_selected_in_scene()
-	if id == 0:
-		alphabetize_nodes()
 	if id == 1:
-		print_selected_node_names()
+		alphabetize_nodes()
 	if id == 2:
-		reset_node_name()
+		print_selected_node_names()
 	if id == 3:
-		reset_transform()
-	if id == 4:
 		replace_node()
+	if id == 4:
+		replace_terms_in_scene()
+	if id == 5:
+		reset_node_name()
+	if id == 6:
+		reset_transform()
 
 func add_prefix_to_selected_in_scene():
 	reusable_instance = preload("res://addons/EditorToolbox/Scene/add_prefix_to_selected_in_scene.gd").new()
@@ -218,6 +221,16 @@ func print_selected_node_names():
 	var _instance = preload("res://addons/EditorToolbox/Scene/print_selected_node_names.gd").new()
 	_instance.execute()
 
+func replace_node():
+	var _instance = preload("res://addons/EditorToolbox/Scene/replace_node.gd").new()
+	_instance.execute()
+
+func replace_terms_in_scene():
+	reusable_instance = preload("res://addons/EditorToolbox/Scene/replace_terms_in_scene.gd").new()
+	add_child(reusable_instance)
+	reusable_instance.done.connect(_on_reusable_instance_done)
+	reusable_instance.execute()
+
 func reset_node_name():
 	var _instance = preload("res://addons/EditorToolbox/Scene/reset_node_name.gd").new()
 	_instance.execute()
@@ -225,10 +238,8 @@ func reset_node_name():
 func reset_transform():
 	var _instance = preload("res://addons/EditorToolbox/Scene/reset_transform.gd").new()
 	_instance.execute()
-
-func replace_node():
-	var _instance = preload("res://addons/EditorToolbox/Scene/replace_node.gd").new()
-	_instance.execute()
+	
+	
 
 # ------------------------------------------------------------------------------
 
