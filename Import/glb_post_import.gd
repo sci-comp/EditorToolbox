@@ -186,6 +186,10 @@ func _post_import(scene : Node):
 				# StaticBody3D with an appropriate CollisionShape3D
 				var children = static_mesh.get_children()
 				var i = -1
+				
+				if (children.size() == 0):
+					print("Static mesh has no children.")
+				
 				for child in children:
 					
 					i += 1
@@ -212,6 +216,10 @@ func _post_import(scene : Node):
 							# Note: The original child is freed when a collision option is found
 							child.get_parent().remove_child(child)
 							child.free()
+					else:
+						
+						print("Collision suffix not found. child.name: " + child.name)
+						
 					# ----------------------------------------------------------
 			
 			else:
@@ -255,6 +263,8 @@ func generate_collision(_scene: Node3D, _node: Node3D, _object_name: String, _co
 	print("static_body name: " + static_body.name)
 	print("collision_shape name: " + collision_shape.name)
 	
+	print("_col_suffix: " + _col_suffix)
+	 
 	match _col_suffix:
 		"-gbx":
 			shape = BoxShape3D.new()
@@ -285,8 +295,8 @@ func generate_collision(_scene: Node3D, _node: Node3D, _object_name: String, _co
 				faces.append(vertices[indices[j + 1]])
 				faces.append(vertices[indices[j + 2]])
 			shape.set_faces(faces)
-		"_":
-				print("Error: Collision option not matched.")
+		"-":
+			print("Error: Collision option not matched. col_suffix")
 		
 	collision_shape.shape = shape
 		

@@ -9,13 +9,24 @@ func execute():
 		print("Alphabetically sorting children of: " + parent_node.name)
 		
 		var children = parent_node.get_children()
+		
 		var names_to_nodes = {}
+		var names_to_node3ds = {}
 
 		for child in children:
-			names_to_nodes[child.name] = child
-
-		var sorted_names = names_to_nodes.keys()
-		sorted_names.sort()
+			if (child is Node3D):
+				names_to_node3ds[child.name] = child
+			else:
+				names_to_nodes[child.name] = child
+		
+		var sorted_node_names = names_to_nodes.keys()
+		var sorted_node3d_names = names_to_node3ds.keys()
+		
+		sorted_node_names.sort()
+		sorted_node3d_names.sort()
+		
+		sorted_node_names.append(sorted_node3d_names)
+		var sorted_names = sorted_node_names;
 		
 		for i in range(len(sorted_names)):
 			var child_name = sorted_names[i]
