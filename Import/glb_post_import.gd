@@ -56,6 +56,13 @@ assigned,
 	-stone
 	-wood
 
+[In Development] Collision layers may also be assigned through suffixes.
+
+	-L2
+		Add the mesh to the 2'nd layer. This layer is often assigned to base geometry in a level. "Paintable" mesh that objects (such as vegetation) may be spawned onto. (Note: Should we rename this suffix to -paintable?)
+	[Planned] -noslide
+		Add the mesh to the 22'nd layer. Viewed by the character controller to determine if the player should slide down the slope.
+
 Example 
 -------
 
