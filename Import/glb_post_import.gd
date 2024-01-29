@@ -214,11 +214,22 @@ func _post_import(scene : Node):
 						else:
 							print("Collision option detected: " + col_suffix)
 							
-							var paintable = false
+							var layer_paintable = false
 							if "-L2" in child.name:
-								paintable = true
-								
-							generate_collision(scene, child, child.name, col_suffix, sub_object_count, paintable)
+								layer_paintable = true
+							
+							var layer_inspectable = false
+							if "-inspect" in child.name:
+								layer_inspectable = true
+							
+							var layer_noslide = false
+							if "-noslide" in child.name:
+								layer_noslide = true
+							
+							generate_collision(scene, child, child.name, col_suffix, sub_object_count, 
+							layer_paintable, 
+							layer_inspectable,
+							layer_noslide)
 							
 							# Note: The original child is freed when a collision option is found
 							child.get_parent().remove_child(child)
@@ -237,7 +248,10 @@ func _post_import(scene : Node):
 	
 	return scene
 
-func generate_collision(_scene: Node3D, _node: Node3D, _object_name: String, _col_suffix: String, _object_count: String, _paintable: bool):
+func generate_collision(_scene: Node3D, _node: Node3D, _object_name: String, _col_suffix: String, _object_count: String, 
+		_paintable: bool,
+ 		_inspectable: bool,
+		_noslide: bool):
 	
 	var phys_material = array_contains_substring(_node.name, phys_material_to_resource_map.keys())
 	
@@ -312,6 +326,14 @@ func generate_collision(_scene: Node3D, _node: Node3D, _object_name: String, _co
 	if _paintable:
 		print("This mesh is paintable.")
 		static_body.collision_layer = static_body.collision_layer | 1 << 1
+	
+	if _inspectable:
+		print("This mesh is inspectable.")
+		static_body.collision_layer = static_body.collision_layer | 1 << 4
+	
+	if _noslide:
+		print("This mesh is marked as no slide.")
+		static_body.collision_layer = static_body.collision_layer | 1 << 20
 
 func array_contains_substring(_name: String, possible_options: Array) -> String:
 	for option in possible_options:

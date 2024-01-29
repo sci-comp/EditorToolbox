@@ -13,9 +13,12 @@ static func replace_last(s: String, pattern: String, replacement: String) -> Str
 	return s.substr(0, index) + replacement + s.substr(index + pattern.length())
 
 static func get_unique_name(base_name: String, parent: Node) -> String:
-	var new_name = base_name
-	var count = 1
-	var ends_with_digit = base_name.match(".*\\d+$")
+	var new_name = "temporary_name"
+	#var ends_with_digit = base_name.match(".*\\d+$")
+	
+	var ends_with_digit: bool = false
+	if (base_name.length() > 0 and base_name[-1].is_valid_int()):
+		ends_with_digit = true
 	
 	var regex = RegEx.new()
 	regex.compile("^(.*?)(\\d+)$")
@@ -23,24 +26,19 @@ static func get_unique_name(base_name: String, parent: Node) -> String:
 	print("Searching for a unique name...")
 	
 	if (parent.has_node(base_name)):
-		print("Existing name has been taken.")
+		new_name = base_name
 		while parent.has_node(new_name):
+			print("Existing name has been taken: " + new_name)
 			if ends_with_digit:
 				var result = regex.search(new_name)
-				
 				if result:
-					print(new_name)
 					var name_part = result.get_string(1)
 					var num_part = int(result.get_string(2))
-					print(name_part)
-					print(num_part)
-					new_name = name_part + str(num_part + count)
+					new_name = name_part + str(num_part + 1)
 				else:
-					new_name = base_name + str(count)
+					new_name = base_name + str(1)
 			else:
-				new_name = base_name + str(count)
-				
-			count += 1
+				new_name = base_name + str(1)
 	else:
 		print("Existing name may be used as is.")
 		

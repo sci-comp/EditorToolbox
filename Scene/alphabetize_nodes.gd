@@ -12,8 +12,11 @@ func execute():
 		
 		var names_to_nodes = {}
 		var names_to_node3ds = {}
-
+		var nodes_to_sort = {}
+		
 		for child in children:
+			nodes_to_sort[child.name] = child
+			
 			if (child is Node3D):
 				names_to_node3ds[child.name] = child
 			else:
@@ -24,11 +27,10 @@ func execute():
 		
 		sorted_node_names.sort()
 		sorted_node3d_names.sort()
-		
-		sorted_node_names.append(sorted_node3d_names)
-		var sorted_names = sorted_node_names;
-		
+		var sorted_names = sorted_node_names + sorted_node3d_names;
+				
 		for i in range(len(sorted_names)):
-			var child_name = sorted_names[i]
-			var child_node = names_to_nodes[child_name]
+			var _name = sorted_names[i]
+			var child_node = nodes_to_sort[_name]
 			parent_node.move_child(child_node, i)
+

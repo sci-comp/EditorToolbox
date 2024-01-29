@@ -4,6 +4,16 @@ extends EditorPlugin
 var submenu_scene: PopupMenu
 var reusable_instance
 
+enum SceneCommands 
+{
+	alphabetize_nodes = 0,
+	make_local = 1,
+	reset_node_name = 2,
+	reset_transform = 3,
+	reset_transform_rotation = 4,
+	swap_node = 5
+}
+
 func _input(event: InputEvent):
 	if event is InputEventKey:
 		if event.is_pressed() and !event.is_echo():
@@ -13,10 +23,15 @@ func _input(event: InputEvent):
 					alphabetize_nodes()
 				elif event.keycode == KEY_N:
 					reset_node_name()
-				elif event.keycode == KEY_R:
+				elif event.keycode == KEY_S:
+					swap_node()
+				elif event.keycode == KEY_T:
 					reset_transform()
 				elif event.keycode == KEY_T:
-					swap_node()
+					reset_transform()
+			elif event.ctrl_pressed:
+				if event.keycode == KEY_T:
+					reset_transform_rotation()
 
 func _enter_tree():
 	
@@ -24,26 +39,37 @@ func _enter_tree():
 	submenu_scene.connect("id_pressed", Callable(self, "_on_scene_submenu_item_selected"))
 	add_tool_submenu_item("Scene", submenu_scene)
 	
-	submenu_scene.add_item("Alphabetize nodes (Alt+A)", 0)
-	submenu_scene.add_item("Reset node names (Alt+N)", 1)
-	submenu_scene.add_item("Reset transform (Alt+T)", 3)
-	submenu_scene.add_item("Swap node (Alt+S)", 4)
+	submenu_scene.add_item("Alphabetize nodes (Alt+A)", SceneCommands.alphabetize_nodes)
+	submenu_scene.add_item("Make local", SceneCommands.make_local)
+	submenu_scene.add_item("Reset node names (Alt+N)", SceneCommands.reset_node_name)
+	submenu_scene.add_item("Reset transform (Alt+T)", SceneCommands.reset_transform)
+	submenu_scene.add_item("Reset transform rotation (Ctrl+T)", SceneCommands.reset_transform_rotation)
+	submenu_scene.add_item("Swap node (Alt+S)", SceneCommands.swap_node)
 
 func _exit_tree():
 	remove_tool_menu_item("Scene")
 
 func _on_scene_submenu_item_selected(id: int):
-	if id == 0:
-		alphabetize_nodes()
-	if id == 1:
-		reset_node_name()
-	if id == 2:
-		reset_transform()
-	if id == 3:
-		swap_node()
-
+	match id:
+		SceneCommands.alphabetize_nodes:
+			alphabetize_nodes()
+		SceneCommands.make_local:
+			make_local()
+		SceneCommands.reset_node_name:
+			reset_node_name()
+		SceneCommands.reset_transform:
+			reset_transform()
+		SceneCommands.reset_transform_rotation:
+			reset_transform_rotation()
+		SceneCommands.swap_node:
+			swap_node()
+	
 func alphabetize_nodes():
 	var _instance = preload("res://addons/EditorToolbox/Scene/alphabetize_nodes.gd").new()
+	_instance.execute()
+
+func make_local():
+	var _instance = preload("res://addons/EditorToolbox/Scene/make_local.gd").new()
 	_instance.execute()
 
 func reset_node_name():
@@ -53,7 +79,11 @@ func reset_node_name():
 func reset_transform():
 	var _instance = preload("res://addons/EditorToolbox/Scene/reset_transform.gd").new()
 	_instance.execute()
-	
+
+func reset_transform_rotation():
+	var _instance = preload("res://addons/EditorToolbox/Scene/reset_transform_rotation.gd").new()
+	_instance.execute()
+
 func swap_node():
 	var _instance = preload("res://addons/EditorToolbox/Scene/swap_node.gd").new()
 	_instance.execute()
