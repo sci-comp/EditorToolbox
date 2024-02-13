@@ -5,6 +5,7 @@ texture_root_path = bpy.path.abspath("//Texture\Common")
 
 for material in bpy.data.materials:
 	#
+	print("------------------------")
 	print("Processing material: " + material.name)
 	#
 	#
@@ -84,23 +85,25 @@ for material in bpy.data.materials:
 					for link in material.node_tree.links:
 						if link.to_node == principled and link.to_socket.identifier == "Normal":
 							print("the BSDF_PRINCIPLED node already has a link to Normal")
-							
 							node_normal_map_exists = True
 							node_normal_map = link.from_node
-										
+							
 					if not node_normal_map_exists:
 						print("a Normal Map node was not found, creating one")
-						
 						node_normal_map = material.node_tree.nodes.new("ShaderNodeNormalMap")
 						material.node_tree.links.new(node_normal_map.outputs["Normal"], principled.inputs["Normal"])
 						node_normal_map.location = (-200, 0)
 					
 					for normal_map_link in node_normal_map.inputs["Color"].links:
-						if normal_map_link.type == "TEX_IMAGE":
-							print("the Normal Map node has a link to an Image Texture node")
-							
-							normal_texture_node_exists = True
-							node_normal_tex_image = normal_map_links.from_node
+						print("Link found on Color input of node_normal_map")
+						
+						if normal_map_link.from_socket.identifier == "Color" and normal_map_link.from_node.type == "TEX_IMAGE":
+							print("the Normal Map Color input is already linked to an Image Texture node")
+							node_normal_texture_exists = True
+							node_normal_texture = normal_map_link.from_node
+						else:
+							print("err: unknown connection to node_normal_map")
+						
 					
 					if not node_normal_texture_exists:
 						print("creating an Image Texture node")
@@ -115,5 +118,7 @@ for material in bpy.data.materials:
 					else:
 						print("loading image: " + tex_base_color_name)
 						node_normal_texture.image = bpy.data.images.load(normal_file_path)
-											
 
+
+	print("done")
+	print("------------------------")

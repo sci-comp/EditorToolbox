@@ -56,10 +56,6 @@ func animation_set_linear_loop_mode():
 	var _instance = preload("res://addons/EditorToolbox/FileSystem/animation_set_linear_loop_mode.gd").new()
 	_instance.execute()
 
-func capitalize_selected_paths():
-	var _instance = preload("res://addons/EditorToolbox/FileSystem/capitalize_selected_paths.gd").new()
-	_instance.execute()
-
 func create_base_material_3d():
 	reusable_instance = preload("res://addons/EditorToolbox/FileSystem/create_base_material_3D.gd").new()
 	add_child(reusable_instance)
