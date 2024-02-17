@@ -22,13 +22,10 @@ func execute():
 					audio_player.name = path.get_file().get_basename()
 					audio_player.stream = load(path)
 					
-					print(path.get_file().get_basename())
-					print(audio_player.name)
-					
 					node.add_child(audio_player)
 					audio_player.owner = current_scene
 					
-					
+					print("Assigned: " + path.get_file())
 				
 				else:
 					print("Selected path is not a wav file: " + str(path))
@@ -36,4 +33,4 @@ func execute():
 			print("Select a sound group in the scene.")
 	else:
 		print("Only one node in the scene should be selected.")
-	
+
