@@ -11,7 +11,9 @@ enum SceneCommands
 	reset_node_name = 2,
 	reset_transform = 3,
 	reset_transform_rotation = 4,
-	swap_node = 5
+	select_children = 5,
+	select_parents = 6,
+	swap_node = 7
 }
 
 func _input(event: InputEvent):
@@ -29,8 +31,14 @@ func _input(event: InputEvent):
 					reset_transform()
 				elif event.keycode == KEY_T:
 					reset_transform()
+					
 			elif event.ctrl_pressed:
-				if event.keycode == KEY_T:
+				
+				if event.keycode == KEY_RIGHT:
+					select_children()
+				elif event.keycode == KEY_LEFT:
+					select_parents()
+				elif event.keycode == KEY_T:
 					reset_transform_rotation()
 
 func _enter_tree():
@@ -44,6 +52,8 @@ func _enter_tree():
 	submenu_scene.add_item("Reset node names (Alt+N)", SceneCommands.reset_node_name)
 	submenu_scene.add_item("Reset transform (Alt+T)", SceneCommands.reset_transform)
 	submenu_scene.add_item("Reset transform rotation (Ctrl+T)", SceneCommands.reset_transform_rotation)
+	submenu_scene.add_item("Select children (Crtl+Right)", SceneCommands.select_children)
+	submenu_scene.add_item("Select parents (Crtl+Left)", SceneCommands.select_parents)
 	submenu_scene.add_item("Swap node (Alt+S)", SceneCommands.swap_node)
 
 func _exit_tree():
@@ -61,6 +71,10 @@ func _on_scene_submenu_item_selected(id: int):
 			reset_transform()
 		SceneCommands.reset_transform_rotation:
 			reset_transform_rotation()
+		SceneCommands.select_children:
+			select_children()
+		SceneCommands.select_children:
+			select_parents()
 		SceneCommands.swap_node:
 			swap_node()
 	
@@ -74,6 +88,14 @@ func make_local():
 
 func reset_node_name():
 	var _instance = preload("res://addons/EditorToolbox/Scene/reset_node_name.gd").new()
+	_instance.execute()
+
+func select_children():
+	var _instance = preload("res://addons/EditorToolbox/Scene/select_children.gd").new()
+	_instance.execute()
+	
+func select_parents():
+	var _instance = preload("res://addons/EditorToolbox/Scene/select_parents.gd").new()
 	_instance.execute()
 
 func reset_transform():
