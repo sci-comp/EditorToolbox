@@ -11,6 +11,8 @@ func _input(event: InputEvent):
 		if event.is_pressed() and !event.is_echo():
 			
 			if event.alt_pressed:
+				if event.keycode == KEY_J:
+					instantiate_from_json()
 				if event.keycode == KEY_L:
 					instantiate_in_a_row(1)
 				if event.keycode == KEY_SEMICOLON:
@@ -28,6 +30,8 @@ func _enter_tree():
 	submenu_file_system.add_item("Animation: Set Linear Loop", 0)
 	submenu_file_system.add_item("Create BaseMaterial3D (Ctrl+M)", 1)
 	
+	submenu_file_system.add_item("Instantiate from JSON (Alt+J)", 10)
+	
 	submenu_file_system.add_item("Layout, 1 unit (Alt+L)", 20)
 	submenu_file_system.add_item("Layout, 2 units (Alt+;)", 21)
 	submenu_file_system.add_item("Layout, 5 units (Alt+')", 22)
@@ -43,13 +47,15 @@ func _on_creation_submenu_item_selected(id: int):
 		animation_set_linear_loop_mode()
 	if id == 1:
 		create_base_material_3d()
+	if id == 10:
+		instantiate_from_json()
 	if id == 20:
 		instantiate_in_a_row(1)
 	if id == 21:
 		instantiate_in_a_row(2)
 	if id == 22:
 		instantiate_in_a_row(5)
-	if id == 4:
+	if id == 40:
 		reimport_all_glb()
 
 func animation_set_linear_loop_mode():
@@ -61,6 +67,10 @@ func create_base_material_3d():
 	add_child(reusable_instance)
 	reusable_instance.done.connect(_on_reusable_instance_done)
 	reusable_instance.execute()
+
+func instantiate_from_json():
+	var _instance = preload("res://addons/EditorToolbox/FileSystem/instantiate_from_json.gd").new()
+	_instance.execute()
 
 func instantiate_in_a_row(_space):
 	var _instance = preload("res://addons/EditorToolbox/FileSystem/instantiate_in_a_row.gd").new()

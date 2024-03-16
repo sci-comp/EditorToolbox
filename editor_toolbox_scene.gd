@@ -23,6 +23,8 @@ func _input(event: InputEvent):
 			if event.alt_pressed:
 				if event.keycode == KEY_A:
 					alphabetize_nodes()
+				elif event.keycode == KEY_L:
+					make_local()
 				elif event.keycode == KEY_N:
 					reset_node_name()
 				elif event.keycode == KEY_S:
@@ -48,7 +50,7 @@ func _enter_tree():
 	add_tool_submenu_item("Scene", submenu_scene)
 	
 	submenu_scene.add_item("Alphabetize nodes (Alt+A)", SceneCommands.alphabetize_nodes)
-	submenu_scene.add_item("Make local", SceneCommands.make_local)
+	submenu_scene.add_item("Make local (Alt + L)", SceneCommands.make_local)
 	submenu_scene.add_item("Reset node names (Alt+N)", SceneCommands.reset_node_name)
 	submenu_scene.add_item("Reset transform (Alt+T)", SceneCommands.reset_transform)
 	submenu_scene.add_item("Reset transform rotation (Ctrl+T)", SceneCommands.reset_transform_rotation)
