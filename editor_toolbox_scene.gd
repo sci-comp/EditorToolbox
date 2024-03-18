@@ -13,7 +13,8 @@ enum SceneCommands
 	reset_transform_rotation = 4,
 	select_children = 5,
 	select_parents = 6,
-	swap_node = 7
+	swap_node = 7,
+	swap_nodes_in_scene = 8
 }
 
 func _input(event: InputEvent):
@@ -31,8 +32,10 @@ func _input(event: InputEvent):
 					swap_node()
 				elif event.keycode == KEY_T:
 					reset_transform()
-				elif event.keycode == KEY_T:
-					reset_transform()
+				elif event.keycode == KEY_Y:
+					reset_transform_rotation()
+				elif event.keycode == KEY_X:
+					swap_nodes_in_scene()
 					
 			elif event.ctrl_pressed:
 				
@@ -40,8 +43,6 @@ func _input(event: InputEvent):
 					select_children()
 				elif event.keycode == KEY_LEFT:
 					select_parents()
-				elif event.keycode == KEY_T:
-					reset_transform_rotation()
 
 func _enter_tree():
 	
@@ -50,13 +51,14 @@ func _enter_tree():
 	add_tool_submenu_item("Scene", submenu_scene)
 	
 	submenu_scene.add_item("Alphabetize nodes (Alt+A)", SceneCommands.alphabetize_nodes)
-	submenu_scene.add_item("Make local (Alt + L)", SceneCommands.make_local)
+	submenu_scene.add_item("Make local (Alt+L)", SceneCommands.make_local)
 	submenu_scene.add_item("Reset node names (Alt+N)", SceneCommands.reset_node_name)
 	submenu_scene.add_item("Reset transform (Alt+T)", SceneCommands.reset_transform)
-	submenu_scene.add_item("Reset transform rotation (Ctrl+T)", SceneCommands.reset_transform_rotation)
+	submenu_scene.add_item("Reset transform rotation (Alt+Y)", SceneCommands.reset_transform_rotation)
 	submenu_scene.add_item("Select children (Crtl+Right)", SceneCommands.select_children)
 	submenu_scene.add_item("Select parents (Crtl+Left)", SceneCommands.select_parents)
 	submenu_scene.add_item("Swap node (Alt+S)", SceneCommands.swap_node)
+	submenu_scene.add_item("Swap nodes in scene (Alt+S)", SceneCommands.swap_nodes_in_scene)
 
 func _exit_tree():
 	remove_tool_menu_item("Scene")
@@ -79,6 +81,8 @@ func _on_scene_submenu_item_selected(id: int):
 			select_parents()
 		SceneCommands.swap_node:
 			swap_node()
+		SceneCommands.swap_nodes_in_scene:
+			swap_nodes_in_scene()
 	
 func alphabetize_nodes():
 	var _instance = preload("res://addons/EditorToolbox/Scene/alphabetize_nodes.gd").new()
@@ -110,6 +114,10 @@ func reset_transform_rotation():
 
 func swap_node():
 	var _instance = preload("res://addons/EditorToolbox/Scene/swap_node.gd").new()
+	_instance.execute()
+
+func swap_nodes_in_scene():
+	var _instance = preload("res://addons/EditorToolbox/Scene/swap_nodes_in_scene.gd").new()
 	_instance.execute()
 
 # ------------------------------------------------------------------------------

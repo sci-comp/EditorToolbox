@@ -21,6 +21,8 @@ func _input(event: InputEvent):
 					instantiate_in_a_row(5)
 				if event.keycode == KEY_M:
 					create_base_material_3d()
+				if event.keycode == KEY_P:
+					instantiate_at_cursor()
 
 func _enter_tree():
 	submenu_file_system = PopupMenu.new()
@@ -30,6 +32,7 @@ func _enter_tree():
 	submenu_file_system.add_item("Animation: Set Linear Loop", 0)
 	submenu_file_system.add_item("Create BaseMaterial3D (Ctrl+M)", 1)
 	
+	submenu_file_system.add_item("Instantiate at cursor (Alt+P)", 9)
 	submenu_file_system.add_item("Instantiate from JSON (Alt+J)", 10)
 	
 	submenu_file_system.add_item("Layout, 1 unit (Alt+L)", 20)
@@ -47,6 +50,8 @@ func _on_creation_submenu_item_selected(id: int):
 		animation_set_linear_loop_mode()
 	if id == 1:
 		create_base_material_3d()
+	if id == 9:
+		instantiate_at_cursor()
 	if id == 10:
 		instantiate_from_json()
 	if id == 20:
@@ -67,6 +72,10 @@ func create_base_material_3d():
 	add_child(reusable_instance)
 	reusable_instance.done.connect(_on_reusable_instance_done)
 	reusable_instance.execute()
+
+func instantiate_at_cursor():
+	var _instance = preload("res://addons/EditorToolbox/FileSystem/instantiate_at_cursor.gd").new()
+	_instance.execute()
 
 func instantiate_from_json():
 	var _instance = preload("res://addons/EditorToolbox/FileSystem/instantiate_from_json.gd").new()
