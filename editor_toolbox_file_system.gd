@@ -11,18 +11,8 @@ func _input(event: InputEvent):
 		if event.is_pressed() and !event.is_echo():
 			
 			if event.alt_pressed:
-				if event.keycode == KEY_J:
-					instantiate_from_json()
-				if event.keycode == KEY_L:
-					instantiate_in_a_row(1)
-				if event.keycode == KEY_SEMICOLON:
-					instantiate_in_a_row(2)
-				if event.keycode == KEY_APOSTROPHE:
-					instantiate_in_a_row(5)
 				if event.keycode == KEY_M:
 					create_base_material_3d()
-				if event.keycode == KEY_P:
-					instantiate_at_cursor()
 
 func _enter_tree():
 	submenu_file_system = PopupMenu.new()
@@ -32,13 +22,6 @@ func _enter_tree():
 	submenu_file_system.add_item("Animation: Set Linear Loop", 0)
 	submenu_file_system.add_item("Create BaseMaterial3D (Ctrl+M)", 1)
 	
-	submenu_file_system.add_item("Instantiate at cursor (Alt+P)", 9)
-	submenu_file_system.add_item("Instantiate from JSON (Alt+J)", 10)
-	
-	submenu_file_system.add_item("Layout, 1 unit (Alt+L)", 20)
-	submenu_file_system.add_item("Layout, 2 units (Alt+;)", 21)
-	submenu_file_system.add_item("Layout, 5 units (Alt+')", 22)
-	
 	submenu_file_system.add_item("Reimport all glb", 99)
 
 func _exit_tree():
@@ -46,20 +29,10 @@ func _exit_tree():
 
 func _on_creation_submenu_item_selected(id: int):
 	
-	if id == 0:
-		animation_set_linear_loop_mode()
-	if id == 1:
-		create_base_material_3d()
-	if id == 9:
-		instantiate_at_cursor()
 	if id == 10:
-		instantiate_from_json()
+		animation_set_linear_loop_mode()
 	if id == 20:
-		instantiate_in_a_row(1)
-	if id == 21:
-		instantiate_in_a_row(2)
-	if id == 22:
-		instantiate_in_a_row(5)
+		create_base_material_3d()
 	if id == 40:
 		reimport_all_glb()
 
@@ -72,18 +45,6 @@ func create_base_material_3d():
 	add_child(reusable_instance)
 	reusable_instance.done.connect(_on_reusable_instance_done)
 	reusable_instance.execute()
-
-func instantiate_at_cursor():
-	var _instance = preload("res://addons/EditorToolbox/FileSystem/instantiate_at_cursor.gd").new()
-	_instance.execute()
-
-func instantiate_from_json():
-	var _instance = preload("res://addons/EditorToolbox/FileSystem/instantiate_from_json.gd").new()
-	_instance.execute()
-
-func instantiate_in_a_row(_space):
-	var _instance = preload("res://addons/EditorToolbox/FileSystem/instantiate_in_a_row.gd").new()
-	_instance.execute(_space)
 
 func reimport_all_glb():
 	reusable_instance = preload("res://addons/EditorToolbox/FileSystem/reimport_all_glb.gd").new()
