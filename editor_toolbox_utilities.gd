@@ -41,7 +41,8 @@ static func get_unique_name(base_name: String, parent: Node) -> String:
 				new_name = base_name + str(1)
 	else:
 		print("Existing name may be used as is.")
-		
+		new_name = base_name
+	
 	print("Returning: " + new_name)
 	
 	return new_name

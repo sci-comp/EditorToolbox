@@ -22,19 +22,13 @@ Custom Prefix and Suffix Definitions
 Prefix and suffix conventions must be followed for this import process. The 
 hypen is treated as a reserved character for object and mesh names in Blender.
 
-prefixes represent: prefab, static mesh, and skeletal mesh respectively,
+Custom Blender prefixes for Static Mesh, Skeletal Mesh, and Mesh are,
 
-	PF_
 	SM_
 	SK_
+	M_
 
-In Godot, the word "scene" is perhaps a bit overloaded with meaning. The naming 
-convention I have chosen does not use the word scene at all.
-
-	Prefab: used for scenes that behave as prefabs.
-	Level: used for scenes that behave as levels (additive scenes in Unity)
-
-Custom suffixes represent: box, sphere, capsule, convex, concave mesh colliders 
+Custom Blender suffixes represent: box, sphere, capsule, convex, concave mesh colliders 
 respectively,
 
 	-gbx
@@ -56,56 +50,57 @@ assigned,
 	-stone
 	-wood
 
-[In Development] Collision layers may also be assigned through suffixes.
-
-	-L2
-		Add the mesh to the 2'nd layer. This layer is often assigned to base geometry in a level. "Paintable" mesh that objects (such as vegetation) may be spawned onto. (Note: Should we rename this suffix to -paintable?)
-	[Planned] -noslide
-		Add the mesh to the 22'nd layer. Viewed by the character controller to determine if the player should slide down the slope.
-
 Example 
 -------
 
-Scene Collection in Blender
+If we want to export "Trident_01" from Blender, then it must be exported 
+individually (with children), and have the following structure with prefixes
+and suffixes.
+
+For example, imagine this Trident comes with a single object to be rendered,
+and three other objects to be used for collision,
+
+- metal for the spikes
+- wood for the pole
+- cloth for the handle
+
+In Blender, we have this structure,
 
 [Object]    | SM_Trident_01
 [Mesh]      | -- M_Trident_01
 [Material]  | ---- MI_Trident_01
 			| 
-[Object]    | -- SM_Trident_01-gcx-metal
-[Mesh]      | ---- M_Trident_01-gcx-metal
-[Material]  | ---- phys_metal
+[Object]    | -- SM_Trident_01-metal-gcx
+[Mesh]      | ---- M_Trident_01-metal-gcx
+[Material]  | ------ phys_metal
 			|
-[Object]    | -- SM_Trident_01-gcx-metal_001
-[Mesh]      | ---- M_Trident_01-gcx-metal_001
-[Material]  | ---- phys_metal
+[Object]    | -- SM_Trident_01-cloth-gcx_001
+[Mesh]      | ---- M_Trident_01-cloth-gcx_001
+[Material]  | ------ phys_cloth
 			|
-[Object]    | -- SM_Trident_01-gcx-metal_002
-[Mesh]      | ---- M_Trident_01-gcx-metal_002
-[Material]  | ---- phys_metal
+[Object]    | -- SM_Trident_01-wood-gcp_002
+[Mesh]      | ---- M_Trident_01-wood-gcp_002
+[Material]  | ------ phys_wood
 
-Note: Materials named after Godot's physics materials are assigned to collision
-mesh in Blender. This is not required, though it is helpful since materials with
-appropriate colors may be used in Blender as a visual aid. This could be used as
-an approach for an alternate implementation. This script, however, only looks at
-materials for the rendered mesh. suffixes are used for collision mesh instead, 
-and we do not assign materials to collision-only mesh.
+In this example, we have our Blender materials named after Godot's 
+physics materials. This is not required, though it is sometimes helpful since 
+materials with appropriate colors may be used in Blender as a visual aid. 
 
-After import,
+This could be used as an approach for an alternate implementation. This script, 
+however, only looks at materials for the rendered mesh. Suffixes are used for 
+collision mesh, and we do not assign materials to collision-only mesh.
 
-[Node3d]            | PF_Trident_01-n1
-[MeshInstance3D]    | -- SM_Trident_01
-[StaticBody3D]      | -- SM_Trident_01-stone
-[CollisionShape3D]  | ---- CollisionShape3D 
+After _post_import, we will have the following scene in Godot
 
-Single Object Example
----------------------
+[MeshInstance3D]    | PF_Trident_01-n1
+[StaticBody3D]      | -- SB_Trident_01-metal-gcx
+[CollisionShape3D]  | ---- CS_Trident_01-metal-gcx
+[StaticBody3D]      | -- SB_Trident_01-cloth-gcx_001
+[CollisionShape3D]  | ---- CS_Trident_01-cloth-gcx_001
+[StaticBody3D]      | -- SB_Trident_01-wood-gcp_002
+[CollisionShape3D]  | ---- CS_Trident_01-wood-gcp_002
 
-Scene Collection in Blender
-
-[Object]    | SM_Trident_01-convcol-metal
-[Mesh]      | -- M_Trident_01
-[Material]  | ---- MI_Trident_01
+Where SM and CS stand for StaticBody and CollisionShape.
 
 """
 
@@ -140,120 +135,67 @@ var collision_options = [ "-gbx", "-gsp", "-gcp", "-gcx", "-gcc" ]
 
 func _post_import(scene : Node):
 	
-	print("Beginning post import for file: " + get_source_file())
+	print("Beginning post import for path: " + get_source_file())
 	
-	#var pattern = "SM_(\\w+)_M_\\1.*"  # Mesh naming pattern from Blender
-	#var regex = RegEx.new()
-	#regex.compile(pattern)
+	if scene.get_child_count() != 1:
+		printerr("This post import process expects that objects are exported individually from Blender.")
+		return
 	
-	var scene_name_without_prefix_or_suffix = ""
+	var imported_scene_root : MeshInstance3D = scene.get_child(0)
 	
-	for possible_static_mesh in scene.get_children():
-		print("Processing node: " + possible_static_mesh.name)
-		if possible_static_mesh is MeshInstance3D:
-			var _prefix = possible_static_mesh.name.split("_", false, 1)[0]
-			if _prefix == "SM":
-				print("This node is recognized as a static mesh.")
-				var static_mesh = possible_static_mesh
+	if imported_scene_root == null:
+		printerr("Imported scene root is null")
+		return
+	
+	var _prefix = imported_scene_root.name.split("_", false, 1)[0]
+	var object_name = imported_scene_root.name.split("_", false, 1)[1]
+	
+	if _prefix != "SM":
+		printerr("Supported prefix not found: ", imported_scene_root.name)
+		return
+	
+	assign_external_material(imported_scene_root, object_name)
+	
+	var children = imported_scene_root.get_children()
+	
+	if (children.size() == 0):
+		print("Static mesh has no children.")
+		
+	else:
+		var i = 0
+		for child : MeshInstance3D in children:
+			i += 1
+			
+			if !child:
+				printerr("Child is null")
+				continue
+			
+			var col_suffix = array_contains_substring(collision_options, child.name)
+			if col_suffix != "":
 				
-				if (scene_name_without_prefix_or_suffix == ""):
-					var scene_name_without_prefix = static_mesh.name.split("_", false, 1)[1]
-					if scene_name_without_prefix.contains("-"):
-						scene_name_without_prefix_or_suffix = scene_name_without_prefix.splot("-", false, 1)[0]
-					else:
-						scene_name_without_prefix_or_suffix = scene_name_without_prefix
-				else:
-					print("Multiple root level static mesh have been detected. The name of this
-						   prefab will be named after the first static mesh encountered.")
+				# Example pattern: SM_Crate_01-gbx-wood_001
+				print("Collision option found: " + col_suffix)
 				
-				# Assumed naming convention for mesh instances: 
-				#    SM_Crate_01-gbx-wood_001
-				#    SM: static mesh indication
-				#    Crate_01: object name
-				#    gbx: collision option
-				#    wood: physics material option
-				#    _001: object count
+				# Creates a static body and collision shape
+				generate_collision(imported_scene_root, child, object_name, col_suffix, i)
 				
-				var object_name = static_mesh.name.split("_", false, 1)[1]
-				var sub_object_count = ""
-				if "-" in object_name:
-					object_name = object_name.split("-", false, 1)[0]
-					var object_tail = object_name.split("-", false, 1)[1]
-					if object_tail.contains("_"):
-						sub_object_count = object_tail.split("_", false, 1)[1]
-						
-				print("Object name: " + object_name)
-				if not sub_object_count == "":
-					print("Sub-object count: " + sub_object_count)
-				
-				# Does nothing if a material is not found
-				assign_external_material(static_mesh, object_name)
-				
-				# If collision options exist, convert MeshInstance3D to 
-				# StaticBody3D with an appropriate CollisionShape3D
-				var children = static_mesh.get_children()
-				var i = -1
-				
-				if (children.size() == 0):
-					print("Static mesh has no children.")
-				
-				for child in children:
-					
-					i += 1
-					
-					print("Processing: " + child.name)
-					
-					# -- Collision----------------------------------------------
-					# Possible options exist when a collision option is found:
-					# - Physics material
-					var col_suffix = array_contains_substring(child.name, collision_options)
-					if col_suffix != "":
-						if not child is MeshInstance3D:
-							print("Collision option detected on a node that is not a MeshInstance3d. 
-								   This is a logical error, skipping node.")
-						else:
-							print("Collision option detected: " + col_suffix)
-							
-							var layer_paintable = false
-							if "-L2" in child.name:
-								layer_paintable = true
-							
-							var layer_inspectable = false
-							if "-inspect" in child.name:
-								layer_inspectable = true
-							
-							var layer_noslide = false
-							if "-noslide" in child.name:
-								layer_noslide = true
-							
-							generate_collision(scene, child, child.name, col_suffix, sub_object_count, 
-							layer_paintable, 
-							layer_inspectable,
-							layer_noslide)
-							
-							# Note: The original child is freed when a collision option is found
-							child.get_parent().remove_child(child)
-							child.free()
-					else:
-						
-						print("Collision suffix not found. child.name: " + child.name)
-						
-					# ----------------------------------------------------------
+				# Free the original child
+				child.get_parent().remove_child(child)
+				child.free()
 			
 			else:
-				print("Supported prefix not found.")
-		
-	scene.name = "PF_" + scene_name_without_prefix_or_suffix + "-n1"
+				print("Collision suffix not found, assigning a material instead")
+				
+				assign_external_material(child, object_name)
+	
+	imported_scene_root.name = "PF_" + object_name + "-n1"
 	print("Finished importing: " + scene.name)
 	
-	return scene
+	return imported_scene_root
 
-func generate_collision(_scene: Node3D, _node: Node3D, _object_name: String, _col_suffix: String, _object_count: String, 
-		_paintable: bool,
- 		_inspectable: bool,
-		_noslide: bool):
+func generate_collision(_parent: MeshInstance3D, _child: MeshInstance3D, _object_name : String, _col_suffix: String, _counter: int):
 	
-	var phys_material = array_contains_substring(_node.name, phys_material_to_resource_map.keys())
+	var phys_material = array_contains_substring(phys_material_to_resource_map.keys(), _child.name)
 	
 	var static_body = StaticBody3D.new()
 	var collision_shape = CollisionShape3D.new()
@@ -264,26 +206,29 @@ func generate_collision(_scene: Node3D, _node: Node3D, _object_name: String, _co
 	if phys_material != "":
 		static_body.name += phys_material
 		collision_shape.name += phys_material
-	if not _object_count == "":
-		static_body.name += "_" + str(_object_count)
-		collision_shape.name += "_" + str(_object_count)
+	if _col_suffix != "":
+		static_body.name += _col_suffix
+		collision_shape.name += _col_suffix
+	if _counter > 0:
+		var i = (str(_counter)).pad_zeros(2);
+		static_body.name += "_" + i
+		collision_shape.name += "_" + i
 	
-	var mesh = _node.mesh
+	var mesh = _child.mesh
 	var bbox = mesh.get_aabb()
-	var origin = _node.transform
+	var origin = _child.transform
 	var shape
 	
-	_scene.add_child(static_body)
-	static_body.set_owner(_scene)
+	_parent.add_child(static_body)
+	static_body.set_owner(_parent)
 	
 	static_body.add_child(collision_shape)
-	collision_shape.set_owner(_scene)
+	collision_shape.set_owner(_parent)
 	
-	static_body.transform.origin = _node.transform.origin
+	static_body.transform.origin = _child.transform.origin
 	
 	print("static_body name: " + static_body.name)
 	print("collision_shape name: " + collision_shape.name)
-	
 	print("_col_suffix: " + _col_suffix)
 	 
 	match _col_suffix:
@@ -317,31 +262,25 @@ func generate_collision(_scene: Node3D, _node: Node3D, _object_name: String, _co
 				faces.append(vertices[indices[j + 2]])
 			shape.set_faces(faces)
 		"-":
-			print("Error: Collision option not matched. col_suffix")
-		
+			print("Error: Collision option not matched: ", _col_suffix)
+	
 	collision_shape.shape = shape
-		
-	assign_physics_material(static_body)
 	
-	if _paintable:
-		print("This mesh is paintable.")
-		static_body.collision_layer = static_body.collision_layer | 1 << 1
-	
-	if _inspectable:
-		print("This mesh is inspectable.")
-		static_body.collision_layer = static_body.collision_layer | 1 << 4
-	
-	if _noslide:
-		print("This mesh is marked as no slide.")
-		static_body.collision_layer = static_body.collision_layer | 1 << 20
+	# Assign physics material from suffix
+	for key in phys_material_to_resource_map.keys():
+		if key in static_body.name:
+			static_body.physics_material_override = phys_material_to_resource_map[key]
+			static_body.collision_layer = static_body.collision_layer | phys_material_to_layer_map[key]
+			print("Physics material assigned: " + key)
+			break
 
-func array_contains_substring(_name: String, possible_options: Array) -> String:
+func array_contains_substring(possible_options: Array, _name: String) -> String:
 	for option in possible_options:
 		if _name.find(option) != -1:
 			return option
 	return ""
 
-func assign_external_material(_node: Node3D, _object_name: String):
+func assign_external_material(_node: MeshInstance3D, _object_name: String):
 	
 	var file_path = get_source_file()
 	var file = FileAccess.open(file_path, FileAccess.READ)
@@ -394,21 +333,14 @@ func assign_external_material(_node: Node3D, _object_name: String):
 				else:
 					print("Path for external material not found.")
 				k += 1
+				
 		else:
 			print("JSON Parse Error: ", error_code)
 		
 		file.close()
+	
 	else:
 		print("File not found: " + file_path)
-
-func assign_physics_material(_node: Node3D):
-	# Lookup and assign physics material from the suffix
-	for key in phys_material_to_resource_map.keys():
-		if key in _node.name:
-			_node.physics_material_override = phys_material_to_resource_map[key]
-			_node.collision_layer = _node.collision_layer | phys_material_to_layer_map[key]
-			print("Physics material assigned: " + key)
-			break
 
 func search_material_resource(material_name: String, start_dir: String = "res://", mi_prefix: String = "MI_") -> String:
 	# Searches the entire project for a resource with material_name. Returns the first path found.
@@ -430,4 +362,3 @@ func search_material_resource(material_name: String, start_dir: String = "res://
 	else:
 		print("Unable to open directory: " + dir)
 	return ""
-
