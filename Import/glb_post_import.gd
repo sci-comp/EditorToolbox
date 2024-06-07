@@ -226,10 +226,6 @@ func generate_collision(_parent: MeshInstance3D, _child: MeshInstance3D, _object
 	collision_shape.set_owner(_parent)
 	
 	static_body.transform.origin = _child.transform.origin
-	
-	print("static_body name: " + static_body.name)
-	print("collision_shape name: " + collision_shape.name)
-	print("_col_suffix: " + _col_suffix)
 	 
 	match _col_suffix:
 		"-gbx":
@@ -244,7 +240,8 @@ func generate_collision(_parent: MeshInstance3D, _child: MeshInstance3D, _object
 		"-gcp":
 			shape = CapsuleShape3D.new()
 			shape.radius = bbox.size.z * 0.5
-			shape.height = bbox.size.y
+			shape.height = bbox.size.y * 2
+			collision_shape.position.y = bbox.position.y + (bbox.size.y * .5)
 		"-gcx":
 			shape = ConvexPolygonShape3D.new()
 			shape.set_points(mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX])
@@ -326,7 +323,6 @@ func assign_external_material(_node: MeshInstance3D, _object_name: String):
 				if external_material_path:
 					var material_resource = ResourceLoader.load(external_material_path) as Material
 					if material_resource:
-						print("Material assigned: " + external_material_path)
 						_node.mesh.surface_set_material(k, material_resource)
 					else:
 						print("Material unsuccesfully loaded.")
@@ -356,7 +352,7 @@ func search_material_resource(material_name: String, start_dir: String = "res://
 					return result  # Step into directory
 			else:
 				if (file_name == material_name + ".tres"): # and file_name.ends_with(".tres"): # and file_name.begins_with(mi_prefix):
-					print("Found material, returning path: " + full_path)
+					print("Found material: " + full_path)
 					return full_path
 			file_name = dir.get_next()
 	else:
