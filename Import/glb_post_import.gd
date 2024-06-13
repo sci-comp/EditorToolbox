@@ -131,7 +131,7 @@ var phys_material_to_layer_map = {
 	"-wood": 1 << 32 - 1,
 }
 
-var collision_options = [ "-gbx", "-gsp", "-gcp", "-gcx", "-gcc" ]
+var collision_options = [ "-gbx", "-gsp", "-gcp", "-gcx", "-gcc", "-gcy" ]
 
 func _post_import(scene : Node):
 	
@@ -239,8 +239,13 @@ func generate_collision(_parent: MeshInstance3D, _child: MeshInstance3D, _object
 			shape.radius = max(bbox.size.x, bbox.size.y, bbox.size.z) * 0.5
 		"-gcp":
 			shape = CapsuleShape3D.new()
-			shape.radius = bbox.size.z * 0.5
-			shape.height = bbox.size.y * 2
+			shape.radius = min(bbox.size.x, bbox.size.z) * 0.5
+			shape.height = bbox.size.y
+			collision_shape.position.y = bbox.position.y + (bbox.size.y * 0.5)
+		"-gcy":
+			shape = CylinderShape3D.new()
+			shape.radius = bbox.size.z * .5
+			shape.height = bbox.size.y
 			collision_shape.position.y = bbox.position.y + (bbox.size.y * .5)
 		"-gcx":
 			shape = ConvexPolygonShape3D.new()
