@@ -141,6 +141,7 @@ func _post_import(scene : Node):
 		printerr("This post import process expects that objects are exported individually from Blender.")
 		return
 	
+	# We should always export objects individually from Blender
 	var imported_scene_root : MeshInstance3D = scene.get_child(0)
 	
 	if imported_scene_root == null:
@@ -177,7 +178,7 @@ func _post_import(scene : Node):
 				print("Collision option found: " + col_suffix)
 				
 				# Creates a static body and collision shape
-				generate_collision(imported_scene_root, child, object_name, col_suffix, i)
+				generate_collision(scene, child, object_name, col_suffix, i)
 				
 				# Free the original child
 				child.get_parent().remove_child(child)
@@ -188,12 +189,13 @@ func _post_import(scene : Node):
 				
 				assign_external_material(child, object_name)
 	
-	imported_scene_root.name = "PF_" + object_name + "-n1"
+	scene.name = "PF_" + object_name + "-n1"
+	imported_scene_root.name = "MI_" + object_name
 	print("Finished importing: " + scene.name)
 	
-	return imported_scene_root
+	return scene
 
-func generate_collision(_parent: MeshInstance3D, _child: MeshInstance3D, _object_name : String, _col_suffix: String, _counter: int):
+func generate_collision(_parent: Node3D, _child: MeshInstance3D, _object_name : String, _col_suffix: String, _counter: int):
 	
 	var phys_material = array_contains_substring(phys_material_to_resource_map.keys(), _child.name)
 	
@@ -237,6 +239,7 @@ func generate_collision(_parent: MeshInstance3D, _child: MeshInstance3D, _object
 		"-gsp":
 			shape = SphereShape3D.new()
 			shape.radius = max(bbox.size.x, bbox.size.y, bbox.size.z) * 0.5
+			collision_shape.position.y = bbox.position.y + (bbox.size.y * 0.5)
 		"-gcp":
 			shape = CapsuleShape3D.new()
 			shape.radius = min(bbox.size.x, bbox.size.z) * 0.5
