@@ -250,6 +250,8 @@ func generate_collision(_parent: Node3D, _child: MeshInstance3D, _object_name : 
 			shape.radius = bbox.size.z * .5
 			shape.height = bbox.size.y
 			collision_shape.position.y = bbox.position.y + (bbox.size.y * .5)
+			collision_shape.position.x = bbox.position.x + (bbox.size.x * .5)
+			collision_shape.position.z = bbox.position.z + (bbox.size.z * .5)
 		"-gcx":
 			shape = ConvexPolygonShape3D.new()
 			shape.set_points(mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX])
