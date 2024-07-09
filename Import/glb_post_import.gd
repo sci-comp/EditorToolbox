@@ -139,21 +139,25 @@ func _post_import(scene : Node):
 	
 	if scene.get_child_count() != 1:
 		printerr("This post import process expects that objects are exported individually from Blender.")
-		return
+		return Node.new()
 	
 	# We should always export objects individually from Blender
-	var imported_scene_root : MeshInstance3D = scene.get_child(0)
+	var imported_scene_root = scene.get_child(0)
+	
+	if not imported_scene_root is MeshInstance3D:
+		print("Supported type not found for imported scene: ", imported_scene_root.name)
+		return Node.new()
 	
 	if imported_scene_root == null:
 		printerr("Imported scene root is null")
-		return
+		return Node.new()
 	
 	var _prefix = imported_scene_root.name.split("_", false, 1)[0]
 	var object_name = imported_scene_root.name.split("_", false, 1)[1]
 	
 	if _prefix != "SM":
-		printerr("Supported prefix not found: ", imported_scene_root.name)
-		return
+		print("Supported prefix not found: ", imported_scene_root.name)
+		return Node.new()
 	
 	assign_external_material(imported_scene_root, object_name)
 	
