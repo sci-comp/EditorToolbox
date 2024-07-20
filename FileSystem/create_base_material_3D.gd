@@ -4,6 +4,7 @@ extends EditorPlugin
 var material_prefix : String = "MI_"
 var texture_prefix : String = "T_"
 var nmap_suffix : String = "_n"
+var emap_suffix : String = "_e"
 
 var popup_instance : PopupPanel
 var vbox : VBoxContainer
@@ -148,7 +149,7 @@ func _on_ok_pressed():
 		if base_name == "" or path.ends_with(".import"):
 			continue
 
-		if base_name.begins_with(texture_prefix) and !base_name.ends_with(nmap_suffix):
+		if base_name.begins_with(texture_prefix) and !base_name.ends_with(nmap_suffix) and !base_name.ends_with(emap_suffix):
 			var new_mat_name = material_prefix + editor_utilities.replace_first(base_name, texture_prefix, "")
 			var albedo_texture = load(path)
 			var mat = StandardMaterial3D.new()
@@ -164,9 +165,21 @@ func _on_ok_pressed():
 
 		if nmap_path in selected_paths:
 			var normal_texture = load(nmap_path)
-			var mat = texture_to_material[path]
+			var mat : StandardMaterial3D = texture_to_material[path]
 			mat.normal_enabled = true
 			mat.normal_texture = normal_texture
+			
+	# Attach emissive maps to materials
+	for path in texture_to_material.keys():
+		var file_name = path.get_file()
+		var base_name = file_name.get_basename()
+		var emap_path = editor_utilities.replace_last(path, base_name, base_name + emap_suffix)
+
+		if emap_path in selected_paths:
+			var emissive_texture = load(emap_path)
+			var mat : StandardMaterial3D = texture_to_material[path]
+			mat.emission_enabled = true
+			mat.emission_texture = emissive_texture
 
 	# Set other properties
 	var use_particle_settings : bool = checkbox_use_particle_settings.is_pressed()
@@ -219,5 +232,3 @@ func _on_ok_pressed():
 
 	popup_instance.queue_free()
 	emit_signal("done")
-
-
