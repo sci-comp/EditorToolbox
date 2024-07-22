@@ -2,12 +2,16 @@
 extends EditorPlugin
 
 func execute():
-	var editor = get_editor_interface()
-	var editor_selection = editor.get_selection()
-	var selected_nodes = editor_selection.get_selected_nodes()
-	var selected_paths = editor.get_selected_paths()
+	var editor : EditorInterface = get_editor_interface()
+	var editor_selection : EditorSelection = editor.get_selection()
+	var selected_nodes : Array = editor_selection.get_selected_nodes()
+	var selected_paths : PackedStringArray = editor.get_selected_paths()
 	
-	var current_scene = editor.get_edited_scene_root()
+	var current_scene : Node = editor.get_edited_scene_root()
+	
+	if current_scene == null or selected_paths.is_empty():
+		print("Something is null or empty, returning early")
+		return
 	
 	if selected_nodes.size() == 1:
 		var node = selected_nodes[0]
@@ -33,4 +37,3 @@ func execute():
 			print("Select a sound group in the scene.")
 	else:
 		print("Only one node in the scene should be selected.")
-

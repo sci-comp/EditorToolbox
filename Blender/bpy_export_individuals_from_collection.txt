@@ -50,4 +50,3 @@ for obj in original_selected_objects:
 # Restore original selection
 for obj in original_selected_objects:
 	obj.select_set(True)
-

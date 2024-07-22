@@ -34,4 +34,3 @@ func execute():
 func _on_ok_pressed():
 	popup_instance.queue_free()
 	emit_signal("done")
-
