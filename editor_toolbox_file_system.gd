@@ -18,7 +18,7 @@ func _input(event: InputEvent):
 func _enter_tree():
 	submenu_file_system = PopupMenu.new()
 	submenu_file_system.connect("id_pressed", Callable(self, "_on_creation_submenu_item_selected"))
-	add_tool_submenu_item("EditorToolbox/FileSystem", submenu_file_system)
+	add_tool_submenu_item("FileSystem", submenu_file_system)
 	
 	submenu_file_system.add_item("Count selected paths", 1)
 	submenu_file_system.add_item("Create BaseMaterial3D (Ctrl+M)", 10)

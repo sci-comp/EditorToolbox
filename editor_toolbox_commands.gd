@@ -14,7 +14,7 @@ func _input(event: InputEvent):
 func _enter_tree():
 	submenu_command = PopupMenu.new()
 	submenu_command.connect("id_pressed", Callable(self, "_on_command_submenu_item_selected"))
-	add_tool_submenu_item("EditorToolbox/Command", submenu_command)
+	add_tool_submenu_item("Command", submenu_command)
 	submenu_command.add_item("Create sound groups", 0)
 	submenu_command.add_item("Screenshot (Alt+K)", 1)
 	submenu_command.add_item("Show about window", 2)
