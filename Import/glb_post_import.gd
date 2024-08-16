@@ -13,22 +13,24 @@ Godot's default suffixes for automatically generating mesh on import are,
 Godot's suffixes are not meant to be used together with the custom ones below.
 Doing so will lead to undefined behavior.
 
-Note: Godot supported suffixes are removed from the node's name before _post_process 
+Note: Godot supported suffixes are removed from the node's name before _post_process
 triggers.
 
 Custom Prefix and Suffix Definitions
 ------------------------------------
 
-Prefix and suffix conventions must be followed for this import process. The 
+Prefix and suffix conventions must be followed for this import process. The
 hypen is treated as a reserved character for object and mesh names in Blender.
 
-Custom Blender prefixes for Static Mesh, Skeletal Mesh, and Mesh are,
+Custom Blender prefixes for StaticBody3D, Skeletal Mesh, Mesh, and AnimatedBody3D are,
 
+	
 	SM_
 	SK_
 	M_
+	AB_
 
-Custom Blender suffixes represent: box, sphere, capsule, convex, concave mesh colliders 
+Custom Blender suffixes represent: box, sphere, capsule, convex, concave mesh colliders
 respectively,
 
 	-gbx
@@ -50,10 +52,10 @@ assigned,
 	-stone
 	-wood
 
-Example 
+Example
 -------
 
-If we want to export "Trident_01" from Blender, then it must be exported 
+If we want to export "Trident_01" from Blender, then it must be exported
 individually (with children), and have the following structure with prefixes
 and suffixes.
 
@@ -69,25 +71,25 @@ In Blender, we have this structure,
 [Object]    | SM_Trident_01
 [Mesh]      | -- M_Trident_01
 [Material]  | ---- MI_Trident_01
-			| 
+	|
 [Object]    | -- SM_Trident_01-metal-gcx
 [Mesh]      | ---- M_Trident_01-metal-gcx
 [Material]  | ------ phys_metal
-			|
+	|
 [Object]    | -- SM_Trident_01-cloth-gcx_001
 [Mesh]      | ---- M_Trident_01-cloth-gcx_001
 [Material]  | ------ phys_cloth
-			|
+	|
 [Object]    | -- SM_Trident_01-wood-gcp_002
 [Mesh]      | ---- M_Trident_01-wood-gcp_002
 [Material]  | ------ phys_wood
 
-In this example, we have our Blender materials named after Godot's 
-physics materials. This is not required, though it is sometimes helpful since 
-materials with appropriate colors may be used in Blender as a visual aid. 
+In this example, we have our Blender materials named after Godot's
+physics materials. This is not required, though it is sometimes helpful since
+materials with appropriate colors may be used in Blender as a visual aid.
 
-This could be used as an approach for an alternate implementation. This script, 
-however, only looks at materials for the rendered mesh. Suffixes are used for 
+This could be used as an approach for an alternate implementation. This script,
+however, only looks at materials for the rendered mesh. Suffixes are used for
 collision mesh, and we do not assign materials to collision-only mesh.
 
 After _post_import, we will have the following scene in Godot
@@ -141,149 +143,124 @@ func _post_import(scene : Node):
 		printerr("This post import process expects that objects are exported individually from Blender.")
 		return Node.new()
 	
-	# We should always export objects individually from Blender
 	var imported_scene_root = scene.get_child(0)
 	
 	if not imported_scene_root is MeshInstance3D:
-		print("Supported type not found for imported scene: ", imported_scene_root.name)
+		printerr("Supported type not found for imported scene: ", imported_scene_root.name)
 		return Node.new()
 	
 	if imported_scene_root == null:
 		printerr("Imported scene root is null")
 		return Node.new()
 	
-	var _prefix = imported_scene_root.name.split("_", false, 1)[0]
+	var object_prefix = imported_scene_root.name.split("_", false, 1)[0]
 	var object_name = imported_scene_root.name.split("_", false, 1)[1]
 	
-	if _prefix != "SM":
-		print("Supported prefix not found: ", imported_scene_root.name)
-		return Node.new()
-	
-	assign_external_material(imported_scene_root, object_name)
-	
-	var children = imported_scene_root.get_children()
-	
-	if (children.size() == 0):
-		print("Static mesh has no children.")
+	if object_prefix == "SM":
 		
-	else:
-		var i = 0
-		for child : MeshInstance3D in children:
-			i += 1
+		assign_external_material(imported_scene_root, object_name)
+		
+		var children = imported_scene_root.get_children()
+		if (children.size() == 0):
+			print("Static mesh has no children.")
+			return Node.new()
+		else:
+			var i = 0
+			for child : MeshInstance3D in children:
+				i += 1
+				
+				if !child:
+					printerr("Child is null")
+					return Node.new()
+				
+				var col_suffix = array_contains_substring(collision_options, child.name)
+				if col_suffix != "":
+					# Example pattern: SM_Crate_01-gbx-wood_001
+					print("Collision option found for static body 3d: " + col_suffix)
+					
+					var phys_material = array_contains_substring(phys_material_to_resource_map.keys(), child.name)
+					var static_body = StaticBody3D.new()
+					var collision_shape = CollisionShape3D.new()
+					
+					# Assign names
+					static_body.name = "SB_" + object_name
+					collision_shape.name = "CS_" + object_name
+					if phys_material != "":
+						static_body.name += phys_material
+						collision_shape.name += phys_material
+					static_body.name += col_suffix
+					collision_shape.name += col_suffix
+					if i > 0:
+						var j = (str(i)).pad_zeros(2);
+						static_body.name += "_" + j
+						collision_shape.name += "_" + j
+					
+					scene.add_child(static_body)
+					static_body.set_owner(scene)
+					static_body.add_child(collision_shape)
+					collision_shape.set_owner(scene)
+					
+					static_body.transform.origin = child.transform.origin
+					assign_physics_material_from_suffix(static_body)
+					generate_collision_shape(child, collision_shape, col_suffix)
+					
+					# Free the original child
+					child.get_parent().remove_child(child)
+					child.free()
+				
+				else:
+					print("Collision suffix not found, assigning a material instead")
+					assign_external_material(child, object_name)
 			
-			if !child:
-				printerr("Child is null")
-				continue
+			imported_scene_root.name = "MI_" + object_name
+			scene.name = "PF_" + object_name + "-n1"
+			return scene
+	
+	elif object_prefix == "AB":
+		
+		var children = imported_scene_root.get_children()
+		if (children.size() != 1):
+			print("AnimatableBody3D should have exactly one child")
+			return Node.new()
+		else:
+			var mesh_instance_3d : MeshInstance3D = children[0]
+			if !mesh_instance_3d:
+				printerr("mesh_instance_3d is null")
+				return Node.new()
 			
-			var col_suffix = array_contains_substring(collision_options, child.name)
+			var col_suffix = array_contains_substring(collision_options, imported_scene_root.name)
 			if col_suffix != "":
+				# Example pattern: AB_Crate_01-gbx-wood_001
+				print("Collision option found for animatable body: " + col_suffix)
 				
-				# Example pattern: SM_Crate_01-gbx-wood_001
-				print("Collision option found: " + col_suffix)
+				var phys_material = array_contains_substring(phys_material_to_resource_map.keys(), imported_scene_root.name)
+				var animatable_body = AnimatableBody3D.new()
+				var collision_shape = CollisionShape3D.new()
 				
-				# Creates a static body and collision shape
-				generate_collision(scene, child, object_name, col_suffix, i)
+				# Assign names
+				animatable_body.name = "AB_" + object_name + "-n1"
+				collision_shape.name = "CS_" + object_name
+				if phys_material != "":
+					collision_shape.name += phys_material
+				collision_shape.name += col_suffix
 				
-				# Free the original child
-				child.get_parent().remove_child(child)
-				child.free()
-			
-			else:
-				print("Collision suffix not found, assigning a material instead")
+				animatable_body.add_child(collision_shape)
+				collision_shape.set_owner(animatable_body)
 				
-				assign_external_material(child, object_name)
-	
-	scene.name = "PF_" + object_name + "-n1"
-	imported_scene_root.name = "MI_" + object_name
-	print("Finished importing: " + scene.name)
-	
-	return scene
-
-func generate_collision(_parent: Node3D, _child: MeshInstance3D, _object_name : String, _col_suffix: String, _counter: int):
-	
-	var phys_material = array_contains_substring(phys_material_to_resource_map.keys(), _child.name)
-	
-	var static_body = StaticBody3D.new()
-	var collision_shape = CollisionShape3D.new()
-	
-	# Assign names
-	static_body.name = "SB_" + _object_name
-	collision_shape.name = "CS_" + _object_name
-	if phys_material != "":
-		static_body.name += phys_material
-		collision_shape.name += phys_material
-	if _col_suffix != "":
-		static_body.name += _col_suffix
-		collision_shape.name += _col_suffix
-	if _counter > 0:
-		var i = (str(_counter)).pad_zeros(2);
-		static_body.name += "_" + i
-		collision_shape.name += "_" + i
-	
-	var mesh = _child.mesh
-	var bbox = mesh.get_aabb()
-	var origin = _child.transform
-	var shape
-	
-	_parent.add_child(static_body)
-	static_body.set_owner(_parent)
-	
-	static_body.add_child(collision_shape)
-	collision_shape.set_owner(_parent)
-	
-	static_body.transform.origin = _child.transform.origin
-	 
-	match _col_suffix:
-		"-gbx":
-			shape = BoxShape3D.new()
-			shape.extents = bbox.size * 0.5
-			collision_shape.position.x = bbox.position.x + (bbox.size.x * .5)
-			collision_shape.position.y = bbox.position.y + (bbox.size.y * .5)
-			collision_shape.position.z = bbox.position.z + (bbox.size.z * .5)
-		"-gsp":
-			shape = SphereShape3D.new()
-			shape.radius = max(bbox.size.x, bbox.size.y, bbox.size.z) * 0.5
-			collision_shape.position.y = bbox.position.y + (bbox.size.y * 0.5)
-		"-gcp":
-			shape = CapsuleShape3D.new()
-			shape.radius = min(bbox.size.x, bbox.size.z) * 0.5
-			shape.height = bbox.size.y
-			collision_shape.position.y = bbox.position.y + (bbox.size.y * 0.5)
-		"-gcy":
-			shape = CylinderShape3D.new()
-			shape.radius = bbox.size.z * .5
-			shape.height = bbox.size.y
-			collision_shape.position.y = bbox.position.y + (bbox.size.y * .5)
-			collision_shape.position.x = bbox.position.x + (bbox.size.x * .5)
-			collision_shape.position.z = bbox.position.z + (bbox.size.z * .5)
-		"-gcx":
-			shape = ConvexPolygonShape3D.new()
-			shape.set_points(mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX])
-		"-gcc":
-			shape = ConcavePolygonShape3D.new()
-			
-			var arrays = mesh.surface_get_arrays(0)
-			var vertices = arrays[Mesh.ARRAY_VERTEX]
-			var indices = arrays[Mesh.ARRAY_INDEX]
-
-			var faces = PackedVector3Array()
-			for j in range(0, indices.size(), 3):
-				faces.append(vertices[indices[j]])
-				faces.append(vertices[indices[j + 1]])
-				faces.append(vertices[indices[j + 2]])
-			shape.set_faces(faces)
-		"-":
-			print("Error: Collision option not matched: ", _col_suffix)
-	
-	collision_shape.shape = shape
-	
-	# Assign physics material from suffix
-	for key in phys_material_to_resource_map.keys():
-		if key in static_body.name:
-			static_body.physics_material_override = phys_material_to_resource_map[key]
-			static_body.collision_layer = static_body.collision_layer | phys_material_to_layer_map[key]
-			print("Physics material assigned: " + key)
-			break
+				animatable_body.transform.origin = mesh_instance_3d.transform.origin
+				mesh_instance_3d.set_owner(null)
+				mesh_instance_3d.get_parent().remove_child(mesh_instance_3d)
+				#mesh_instance_3d.reparent(animatable_body)
+				animatable_body.add_child(mesh_instance_3d)
+				
+				assign_physics_material_from_suffix(animatable_body)
+				generate_collision_shape(imported_scene_root, collision_shape, col_suffix)
+				
+				print("Finished importing: " + scene.name)
+				return animatable_body
+			else: 
+				printerr("Missing collision suffix")
+				return Node.new()
 
 func array_contains_substring(possible_options: Array, _name: String) -> String:
 	for option in possible_options:
@@ -351,6 +328,64 @@ func assign_external_material(_node: MeshInstance3D, _object_name: String):
 	
 	else:
 		print("File not found: " + file_path)
+
+func assign_physics_material_from_suffix(body) -> void:
+	for key in phys_material_to_resource_map.keys():
+		if key in body.name:
+			body.physics_material_override = phys_material_to_resource_map[key]
+			body.collision_layer = body.collision_layer | phys_material_to_layer_map[key]
+			print("Physics material assigned: " + key)
+			break
+	return
+
+func generate_collision_shape(subject : MeshInstance3D, collision_shape : CollisionShape3D, _col_suffix : String) -> void:
+	
+	var mesh = subject.mesh
+	var bbox = mesh.get_aabb()
+	var shape
+	
+	match _col_suffix:
+		"-gbx":
+			shape = BoxShape3D.new()
+			shape.extents = bbox.size * 0.5
+			collision_shape.position.x = bbox.position.x + (bbox.size.x * .5)
+			collision_shape.position.y = bbox.position.y + (bbox.size.y * .5)
+			collision_shape.position.z = bbox.position.z + (bbox.size.z * .5)
+		"-gsp":
+			shape = SphereShape3D.new()
+			shape.radius = max(bbox.size.x, bbox.size.y, bbox.size.z) * 0.5
+			collision_shape.position.y = bbox.position.y + (bbox.size.y * 0.5)
+		"-gcp":
+			shape = CapsuleShape3D.new()
+			shape.radius = min(bbox.size.x, bbox.size.z) * 0.5
+			shape.height = bbox.size.y
+			collision_shape.position.y = bbox.position.y + (bbox.size.y * 0.5)
+		"-gcy":
+			shape = CylinderShape3D.new()
+			shape.radius = bbox.size.z * .5
+			shape.height = bbox.size.y
+			collision_shape.position.y = bbox.position.y + (bbox.size.y * .5)
+			collision_shape.position.x = bbox.position.x + (bbox.size.x * .5)
+			collision_shape.position.z = bbox.position.z + (bbox.size.z * .5)
+		"-gcx":
+			shape = ConvexPolygonShape3D.new()
+			shape.set_points(mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX])
+		"-gcc":
+			shape = ConcavePolygonShape3D.new()
+			var arrays = mesh.surface_get_arrays(0)
+			var vertices = arrays[Mesh.ARRAY_VERTEX]
+			var indices = arrays[Mesh.ARRAY_INDEX]
+			var faces = PackedVector3Array()
+			for j in range(0, indices.size(), 3):
+				faces.append(vertices[indices[j]])
+				faces.append(vertices[indices[j + 1]])
+				faces.append(vertices[indices[j + 2]])
+			shape.set_faces(faces)
+		"-":
+			print("Error: Collision option not matched: ", _col_suffix)
+	
+	collision_shape.shape = shape
+
 
 func search_material_resource(material_name: String, start_dir: String = "res://", mi_prefix: String = "MI_") -> String:
 	# Searches the entire project for a resource with material_name. Returns the first path found.
