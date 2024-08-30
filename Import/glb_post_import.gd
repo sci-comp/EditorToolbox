@@ -162,8 +162,9 @@ func _post_import(scene : Node):
 		
 		var children = imported_scene_root.get_children()
 		if (children.size() == 0):
-			print("Static mesh has no children.")
-			return Node.new()
+			print("Returning only a MeshInstance3D node")
+			imported_scene_root.name = "PF_" + object_name + "-n1"
+			return imported_scene_root
 		else:
 			var i = 0
 			for child : MeshInstance3D in children:
@@ -217,50 +218,102 @@ func _post_import(scene : Node):
 			return scene
 	
 	elif object_prefix == "AB":
-		
+		imported_scene_root.name = "MI_" + object_name
 		var children = imported_scene_root.get_children()
-		if (children.size() != 1):
-			print("AnimatableBody3D should have exactly one child")
+		if children.size() == 0:
+			printerr("AnimatableBody3D should have one or more children")
 			return Node.new()
-		else:
-			var mesh_instance_3d : MeshInstance3D = children[0]
-			if !mesh_instance_3d:
-				printerr("mesh_instance_3d is null")
-				return Node.new()
+		elif children.size() == 1:
+			var collision_mesh_instance_3d : MeshInstance3D = children[0]
 			
-			var col_suffix = array_contains_substring(collision_options, imported_scene_root.name)
+			var col_suffix = array_contains_substring(collision_options, collision_mesh_instance_3d.name)
 			if col_suffix != "":
-				# Example pattern: AB_Crate_01-gbx-wood_001
+				# Example pattern: Crate_01-gbx-wood_001
 				print("Collision option found for animatable body: " + col_suffix)
 				
-				var phys_material = array_contains_substring(phys_material_to_resource_map.keys(), imported_scene_root.name)
+				var phys_material = array_contains_substring(phys_material_to_resource_map.keys(), collision_mesh_instance_3d.name)
 				var animatable_body = AnimatableBody3D.new()
 				var collision_shape = CollisionShape3D.new()
 				
-				# Assign names
-				animatable_body.name = "AB_" + object_name + "-n1"
-				collision_shape.name = "CS_" + object_name
-				if phys_material != "":
-					collision_shape.name += phys_material
-				collision_shape.name += col_suffix
+				animatable_body.name = "AB_" + collision_mesh_instance_3d.name
+				collision_shape.name = "CS_" + collision_mesh_instance_3d.name
 				
+				scene.add_child(animatable_body)
+				animatable_body.set_owner(scene)
 				animatable_body.add_child(collision_shape)
-				collision_shape.set_owner(animatable_body)
+				collision_shape.set_owner(scene)
 				
-				animatable_body.transform.origin = mesh_instance_3d.transform.origin
-				mesh_instance_3d.set_owner(null)
-				mesh_instance_3d.get_parent().remove_child(mesh_instance_3d)
-				#mesh_instance_3d.reparent(animatable_body)
-				animatable_body.add_child(mesh_instance_3d)
+				# Reparent mesh instance to animatable body
+				scene.remove_child(imported_scene_root)
+				imported_scene_root.set_owner(null)
+				animatable_body.add_child(imported_scene_root)
+				imported_scene_root.set_owner(scene)
+				assign_external_material(imported_scene_root, object_name)
 				
 				assign_physics_material_from_suffix(animatable_body)
-				generate_collision_shape(imported_scene_root, collision_shape, col_suffix)
+				generate_collision_shape(collision_mesh_instance_3d, collision_shape, col_suffix)
 				
-				print("Finished importing: " + scene.name)
+				scene.remove_child(collision_mesh_instance_3d)
+				collision_mesh_instance_3d.free()
+				
 				return animatable_body
+				
 			else: 
 				printerr("Missing collision suffix")
-				return Node.new()
+			
+			return 
+		else:
+			var first_animatable_body
+			var i = 0
+			for collision_mesh_instance_3d : MeshInstance3D in children:
+				i += 1
+				
+				var col_suffix = array_contains_substring(collision_options, collision_mesh_instance_3d.name)
+				if col_suffix != "":
+					# Example pattern: Crate_01-gbx-wood_001
+					print("Collision option found for animatable body: " + col_suffix)
+					
+					var phys_material = array_contains_substring(phys_material_to_resource_map.keys(), collision_mesh_instance_3d.name)
+					var animatable_body = AnimatableBody3D.new()
+					var collision_shape = CollisionShape3D.new()
+					
+					if i == 1:
+						first_animatable_body = animatable_body
+					
+					animatable_body.name = "AB_" + collision_mesh_instance_3d.name
+					collision_shape.name = "CS_" + collision_mesh_instance_3d.name
+					
+					scene.add_child(animatable_body)
+					animatable_body.set_owner(scene)
+					animatable_body.add_child(collision_shape)
+					collision_shape.set_owner(scene)
+					
+					assign_physics_material_from_suffix(animatable_body)
+					generate_collision_shape(collision_mesh_instance_3d, collision_shape, col_suffix)
+				else: 
+					printerr("Missing collision suffix")
+					continue
+				
+				# Free the original child
+				collision_mesh_instance_3d.get_parent().remove_child(collision_mesh_instance_3d)
+				collision_mesh_instance_3d.free()
+			
+			# Reparent mesh instance to the first animatable body
+			#var smoothing = Smoothing.new()
+			#smoothing.name = "Smoothing"
+			#first_animatable_body.add_child(smoothing)
+			#smoothing.set_owner(scene)
+			
+			scene.remove_child(imported_scene_root)
+			imported_scene_root.set_owner(null)
+			#smoothing.add_child(imported_scene_root)
+			first_animatable_body.add_child(imported_scene_root)
+			imported_scene_root.set_owner(scene)
+			assign_external_material(imported_scene_root, object_name)
+			
+			return scene
+	
+	return Node.new()
 
 func array_contains_substring(possible_options: Array, _name: String) -> String:
 	for option in possible_options:
@@ -385,7 +438,6 @@ func generate_collision_shape(subject : MeshInstance3D, collision_shape : Collis
 			print("Error: Collision option not matched: ", _col_suffix)
 	
 	collision_shape.shape = shape
-
 
 func search_material_resource(material_name: String, start_dir: String = "res://", mi_prefix: String = "MI_") -> String:
 	# Searches the entire project for a resource with material_name. Returns the first path found.
