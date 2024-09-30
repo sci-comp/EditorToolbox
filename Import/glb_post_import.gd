@@ -139,19 +139,23 @@ func _post_import(scene : Node):
 	
 	print("Beginning post import for path: " + get_source_file())
 	
-	if scene.get_child_count() != 1:
-		printerr("This post import process expects that objects are exported individually from Blender.")
-		return Node.new()
+	#if scene.get_child_count() != 1:
+	#	printerr("This post import process expects that objects are exported individually from Blender.")
+	#	return Node.new()
 	
 	var imported_scene_root = scene.get_child(0)
 	
-	if not imported_scene_root is MeshInstance3D:
-		printerr("Supported type not found for imported scene: ", imported_scene_root.name)
-		return Node.new()
+	#if not imported_scene_root is MeshInstance3D:
+	#	printerr("Imported scene is not a MeshInstance3D: ", imported_scene_root.name)
+	#	return Node.new()
 	
 	if imported_scene_root == null:
 		printerr("Imported scene root is null")
 		return Node.new()
+	
+	if (!imported_scene_root.name.contains("_")):
+		print("This scene does not have the usual naming convention. Returning as-is, ", scene.name)
+		return scene
 	
 	var object_prefix = imported_scene_root.name.split("_", false, 1)[0]
 	var object_name = imported_scene_root.name.split("_", false, 1)[1]
@@ -313,7 +317,18 @@ func _post_import(scene : Node):
 			
 			return scene
 	
-	return Node.new()
+	elif object_prefix == "SK":
+		print("Skeletal mesh detected")
+		var children = imported_scene_root.get_children()
+		if (children.size() == 0):
+			printerr("Skeletal mesh has no children?")
+			return scene
+		assign_external_material_recursively(imported_scene_root)
+		
+		return scene
+	
+	print("No matching prefix found, retuning node as is.")
+	return scene
 
 func array_contains_substring(possible_options: Array, _name: String) -> String:
 	for option in possible_options:
@@ -327,7 +342,7 @@ func assign_external_material(_node: MeshInstance3D, _object_name: String):
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	
 	if file:
-		
+		print("file found: ", file_path)
 		var magic = file.get_32()
 		var version = file.get_32()
 		var length = file.get_32()
@@ -373,7 +388,7 @@ func assign_external_material(_node: MeshInstance3D, _object_name: String):
 				else:
 					print("Path for external material not found.")
 				k += 1
-				
+		
 		else:
 			print("JSON Parse Error: ", error_code)
 		
@@ -459,3 +474,15 @@ func search_material_resource(material_name: String, start_dir: String = "res://
 	else:
 		print("Unable to open directory: " + dir)
 	return ""
+
+func assign_external_material_recursively(node):
+	var children = node.get_children()
+	if children.size() == 0:
+		return
+	for child in children:
+		if child.name.begins_with("SM_"):
+			var _object_name = child.name.replace("SM_", "")
+			var mesh_instance = child as MeshInstance3D
+			print("Assigning a material to child node: ", child.name)
+			assign_external_material(mesh_instance, _object_name)
+		assign_external_material_recursively(child)
