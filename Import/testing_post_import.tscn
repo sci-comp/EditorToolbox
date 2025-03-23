@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://pc6xrshe5fhr"]
 
-[ext_resource type="PackedScene" uid="uid://dl5oj6de3drb8" path="res://addons/EditorToolbox/Import/PF_Test_Collision.glb" id="1_qdx0m"]
+[ext_resource type="PackedScene" uid="uid://bp3cyphunxjy" path="res://addons/EditorToolbox/Import/PF_Test_Collision.glb" id="1_qdx0m"]
 
 [node name="TestingPostImport" type="Node3D"]
 

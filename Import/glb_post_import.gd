@@ -168,7 +168,7 @@ func _post_import(scene : Node):
 		if (children.size() == 0):
 			print("Returning only a MeshInstance3D node")
 			imported_scene_root.name = "PF_" + object_name + "-n1"
-			return imported_scene_root
+			return scene #imported_scene_root
 		else:
 			var i = 0
 			for child : MeshInstance3D in children:
@@ -356,6 +356,11 @@ func assign_external_material(_node: MeshInstance3D, _object_name: String):
 			
 			# Extract material name from the glb
 			var parsed_json_data = json.get_data()
+			
+			if not parsed_json_data.has("nodes") or parsed_json_data["nodes"].is_empty():
+				printerr("Invalid JSON structure")
+				return
+			
 			var first_object_mesh_index = parsed_json_data["nodes"][0].get("mesh", -1)
 			
 			# parsed_json_data["meshes"] contains an index for the material 
@@ -397,8 +402,8 @@ func assign_external_material(_node: MeshInstance3D, _object_name: String):
 	else:
 		print("File not found: " + file_path)
 
-func assign_physics_material_from_suffix(body) -> void:
-	for key in phys_material_to_resource_map.keys():
+func assign_physics_material_from_suffix(body : CollisionObject3D) -> void:
+	for key : String in phys_material_to_resource_map.keys():
 		if key in body.name:
 			body.physics_material_override = phys_material_to_resource_map[key]
 			body.collision_layer = body.collision_layer | phys_material_to_layer_map[key]
@@ -445,9 +450,12 @@ func generate_collision_shape(subject : MeshInstance3D, collision_shape : Collis
 			var indices = arrays[Mesh.ARRAY_INDEX]
 			var faces = PackedVector3Array()
 			for j in range(0, indices.size(), 3):
-				faces.append(vertices[indices[j]])
-				faces.append(vertices[indices[j + 1]])
-				faces.append(vertices[indices[j + 2]])
+				if j + 2 < indices.size() and indices[j + 2] < vertices.size():
+					faces.append(vertices[indices[j]])
+					faces.append(vertices[indices[j + 1]])
+					faces.append(vertices[indices[j + 2]])
+				else:
+					printerr("Invalid index access in mesh data")
 			shape.set_faces(faces)
 		"-":
 			print("Error: Collision option not matched: ", _col_suffix)
@@ -471,6 +479,7 @@ func search_material_resource(material_name: String, start_dir: String = "res://
 					print("Found material: " + full_path)
 					return full_path
 			file_name = dir.get_next()
+		dir.list_dir_end()
 	else:
 		print("Unable to open directory: " + dir)
 	return ""
