@@ -110,15 +110,15 @@ Where SM and CS stand for StaticBody and CollisionShape.
 extends EditorScenePostImport
 
 var phys_material_to_resource_map = {
-	"-cloth": preload("res://addons/StandardAssets/PhysicsMaterial/phys_cloth.tres") as PhysicsMaterial,
-	"-dirt": preload("res://addons/StandardAssets/PhysicsMaterial/phys_dirt.tres") as PhysicsMaterial,
-	"-glass": preload("res://addons/StandardAssets/PhysicsMaterial/phys_glass.tres") as PhysicsMaterial,
-	"-ice": preload("res://addons/StandardAssets/PhysicsMaterial/phys_ice.tres") as PhysicsMaterial,
-	"-metal": preload("res://addons/StandardAssets/PhysicsMaterial/phys_metal.tres") as PhysicsMaterial,
-	"-organic": preload("res://addons/StandardAssets/PhysicsMaterial/phys_organic.tres") as PhysicsMaterial,
-	"-plastic": preload("res://addons/StandardAssets/PhysicsMaterial/phys_plastic.tres") as PhysicsMaterial,
-	"-stone": preload("res://addons/StandardAssets/PhysicsMaterial/phys_stone.tres") as PhysicsMaterial,
-	"-wood": preload("res://addons/StandardAssets/PhysicsMaterial/phys_wood.tres") as PhysicsMaterial,
+	"-cloth": preload("res://addons/StandardAssets/PhysicsMaterial/Cloth.tres") as PhysicsMaterial,
+	"-dirt": preload("res://addons/StandardAssets/PhysicsMaterial/Dirt.tres") as PhysicsMaterial,
+	"-glass": preload("res://addons/StandardAssets/PhysicsMaterial/Glass.tres") as PhysicsMaterial,
+	"-ice": preload("res://addons/StandardAssets/PhysicsMaterial/Ice.tres") as PhysicsMaterial,
+	"-metal": preload("res://addons/StandardAssets/PhysicsMaterial/Metal.tres") as PhysicsMaterial,
+	"-organic": preload("res://addons/StandardAssets/PhysicsMaterial/Organic.tres") as PhysicsMaterial,
+	"-plastic": preload("res://addons/StandardAssets/PhysicsMaterial/Plastic.tres") as PhysicsMaterial,
+	"-stone": preload("res://addons/StandardAssets/PhysicsMaterial/Stone.tres") as PhysicsMaterial,
+	"-wood": preload("res://addons/StandardAssets/PhysicsMaterial/Wood.tres") as PhysicsMaterial,
 }
 
 var phys_material_to_layer_map = {
