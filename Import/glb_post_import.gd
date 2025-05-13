@@ -341,19 +341,17 @@ func generate_collision_shape(subject : MeshInstance3D, collision_shape : Collis
 		"-gsp":
 			shape = SphereShape3D.new()
 			shape.radius = max(bbox.size.x, bbox.size.y, bbox.size.z) * 0.5
-			collision_shape.position.y = bbox.position.y + (bbox.size.y * 0.5)
+			collision_shape.position = bbox.get_center()
 		"-gcp":
 			shape = CapsuleShape3D.new()
 			shape.radius = min(bbox.size.x, bbox.size.z) * 0.5
 			shape.height = bbox.size.y
-			collision_shape.position.y = bbox.position.y + (bbox.size.y * 0.5)
+			collision_shape.position = bbox.get_center()
 		"-gcy":
 			shape = CylinderShape3D.new()
 			shape.radius = bbox.size.z * .5
 			shape.height = bbox.size.y
-			collision_shape.position.y = bbox.position.y + (bbox.size.y * .5)
-			collision_shape.position.x = bbox.position.x + (bbox.size.x * .5)
-			collision_shape.position.z = bbox.position.z + (bbox.size.z * .5)
+			collision_shape.position = bbox.get_center()
 		"-gcx":
 			shape = ConvexPolygonShape3D.new()
 			shape.set_points(mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX])
