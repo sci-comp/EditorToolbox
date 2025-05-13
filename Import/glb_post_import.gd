@@ -1,109 +1,56 @@
 """
+Godot Import Pipeline for Blender Assets
+========================================
 
-Native Collision Support
-------------------------
+This script processes Blender exports with custom naming conventions to create
+collision bodies and physics materials. Objects are exported individually from
+Blender with their children to generate proper collision hierarchies.
 
-Godot's default suffixes for automatically generating mesh on import are,
+License: MIT, by Paul
 
-	-col
-	-convcol
-	-colonly
-	-convcolonly
+Naming Conventions
+------------------
 
-Godot's suffixes are not meant to be used together with the custom ones below.
-Doing so will lead to undefined behavior.
+Prefixes (Blender -> Godot):
+ SM_ -> StaticBody3D + MeshInstance3D
+ AB_ -> AnimatableBody3D
+ SK_ -> SkeletalMesh (preserved)
+ M_  -> Mesh data
 
-Note: Godot supported suffixes are removed from the node's name before _post_process
-triggers.
+Collision Suffixes:
+ -gbx : BoxShape3D
+ -gsp : SphereShape3D  
+ -gcp : CapsuleShape3D
+ -gcy : CylinderShape3D
+ -gcx : ConvexPolygonShape3D
+ -gcc : ConcavePolygonShape3D
 
-Custom Prefix and Suffix Definitions
-------------------------------------
+Physics Materials (optional):
+ -cloth, -dirt, -glass, -ice, -metal, -organic, -plastic, -stone, -wood
 
-Prefix and suffix conventions must be followed for this import process. The
-hypen is treated as a reserved character for object and mesh names in Blender.
+Multiple Collision Shapes
+-------------------------
+To create multiple collision shapes for a single object, add collision objects
+as children of the main SM_ object in Blender. Each child should follow the
+pattern: SM_ObjectName-[material]-[collision]-[variant]
 
-Custom Blender prefixes for StaticBody3D, Skeletal Mesh, Mesh, and AnimatedBody3D are,
+Example:
+ SM_Crate_01                          // Main renderable object
+ |-- SM_Crate_01-metal-gbx            // Box collision for metal parts
+ |-- SM_Crate_01-wood-gcx_001         // Convex collision for wood parts
+ |-- SM_Crate_01-cloth-gsp_002        // Sphere collision for cloth parts
 
-	
-	SM_
-	SK_
-	M_
-	AB_
+Results in Godot:
+ PF_Crate_01-n1 (MeshInstance3D)
+ |-- SB_Crate_01-metal-gbx (StaticBody3D)
+ |   |-- CS_Crate_01-metal-gbx (CollisionShape3D)
+ |-- SB_Crate_01-wood-gcx_001 (StaticBody3D)
+ |   |-- CS_Crate_01-wood-gcx_001 (CollisionShape3D)
+ |-- SB_Crate_01-cloth-gsp_002 (StaticBody3D)
+	 |-- CS_Crate_01-cloth-gsp_002 (CollisionShape3D)
 
-Custom Blender suffixes represent: box, sphere, capsule, convex, concave mesh colliders
-respectively,
-
-	-gbx
-	-gsp
-	-gcp
-	-gcx
-	-gcc
-
-When a custom collision suffix is used, a physics material suffix may also be
-assigned,
-
-	-cloth
-	-dirt
-	-glass
-	-ice
-	-metal
-	-organic
-	-plastic
-	-stone
-	-wood
-
-Example
--------
-
-If we want to export "Trident_01" from Blender, then it must be exported
-individually (with children), and have the following structure with prefixes
-and suffixes.
-
-For example, imagine this Trident comes with a single object to be rendered,
-and three other objects to be used for collision,
-
-- metal for the spikes
-- wood for the pole
-- cloth for the handle
-
-In Blender, we have this structure,
-
-[Object]    | SM_Trident_01
-[Mesh]      | -- M_Trident_01
-[Material]  | ---- MI_Trident_01
-	|
-[Object]    | -- SM_Trident_01-metal-gcx
-[Mesh]      | ---- M_Trident_01-metal-gcx
-[Material]  | ------ phys_metal
-	|
-[Object]    | -- SM_Trident_01-cloth-gcx_001
-[Mesh]      | ---- M_Trident_01-cloth-gcx_001
-[Material]  | ------ phys_cloth
-	|
-[Object]    | -- SM_Trident_01-wood-gcp_002
-[Mesh]      | ---- M_Trident_01-wood-gcp_002
-[Material]  | ------ phys_wood
-
-In this example, we have our Blender materials named after Godot's
-physics materials. This is not required, though it is sometimes helpful since
-materials with appropriate colors may be used in Blender as a visual aid.
-
-This could be used as an approach for an alternate implementation. This script,
-however, only looks at materials for the rendered mesh. Suffixes are used for
-collision mesh, and we do not assign materials to collision-only mesh.
-
-After _post_import, we will have the following scene in Godot
-
-[MeshInstance3D]    | PF_Trident_01-n1
-[StaticBody3D]      | -- SB_Trident_01-metal-gcx
-[CollisionShape3D]  | ---- CS_Trident_01-metal-gcx
-[StaticBody3D]      | -- SB_Trident_01-cloth-gcx_001
-[CollisionShape3D]  | ---- CS_Trident_01-cloth-gcx_001
-[StaticBody3D]      | -- SB_Trident_01-wood-gcp_002
-[CollisionShape3D]  | ---- CS_Trident_01-wood-gcp_002
-
-Where SM and CS stand for StaticBody and CollisionShape.
-
+Note: Do not mix Godot's built-in collision suffixes (-col, -convcol, etc.) 
+with these custom ones.
 """
 
 @tool
@@ -135,25 +82,14 @@ var phys_material_to_layer_map = {
 
 var collision_options = [ "-gbx", "-gsp", "-gcp", "-gcx", "-gcc", "-gcy" ]
 
-func _post_import(scene : Node):
-	
-	print("Beginning post import for path: " + get_source_file())
-	
-	#if scene.get_child_count() != 1:
-	#	printerr("This post import process expects that objects are exported individually from Blender.")
-	#	return Node.new()
-	
+func _post_import(scene : Node):	
 	var imported_scene_root = scene.get_child(0)
-	
-	#if not imported_scene_root is MeshInstance3D:
-	#	printerr("Imported scene is not a MeshInstance3D: ", imported_scene_root.name)
-	#	return Node.new()
 	
 	if imported_scene_root == null:
 		printerr("Imported scene root is null")
 		return Node.new()
 	
-	if (!imported_scene_root.name.contains("_")):
+	if not imported_scene_root.name.contains("_"):
 		print("This scene does not have the usual naming convention. Returning as-is, ", scene.name)
 		return scene
 	
@@ -165,18 +101,19 @@ func _post_import(scene : Node):
 		assign_external_material(imported_scene_root, object_name)
 		
 		var children = imported_scene_root.get_children()
-		if (children.size() == 0):
+		if children.is_empty():
 			print("Returning only a MeshInstance3D node")
 			imported_scene_root.name = "PF_" + object_name + "-n1"
-			return scene #imported_scene_root
+			return scene
 		else:
 			var i = 0
 			for child : MeshInstance3D in children:
 				i += 1
 				
-				if !child:
-					printerr("Child is null")
-					return Node.new()
+				# Remove after testing, get_children never returns null?
+				#if !child:
+				#	printerr("Child is null")
+				#	return Node.new()
 				
 				var col_suffix = array_contains_substring(collision_options, child.name)
 				if col_suffix != "":
@@ -188,17 +125,13 @@ func _post_import(scene : Node):
 					var collision_shape = CollisionShape3D.new()
 					
 					# Assign names
-					static_body.name = "SB_" + object_name
-					collision_shape.name = "CS_" + object_name
-					if phys_material != "":
-						static_body.name += phys_material
-						collision_shape.name += phys_material
-					static_body.name += col_suffix
-					collision_shape.name += col_suffix
+					var name_suffix = object_name + phys_material + col_suffix
+					static_body.name = "SB_" + name_suffix
+					collision_shape.name = "CS_" + name_suffix
+					
 					if i > 0:
-						var j = (str(i)).pad_zeros(2);
-						static_body.name += "_" + j
-						collision_shape.name += "_" + j
+						static_body.name += "_" + str(i).pad_zeros(2)
+						collision_shape.name += "_" + str(i).pad_zeros(2)
 					
 					scene.add_child(static_body)
 					static_body.set_owner(scene)
@@ -274,7 +207,6 @@ func _post_import(scene : Node):
 				
 				var col_suffix = array_contains_substring(collision_options, collision_mesh_instance_3d.name)
 				if col_suffix != "":
-					# Example pattern: Crate_01-gbx-wood_001
 					print("Collision option found for animatable body: " + col_suffix)
 					
 					var phys_material = array_contains_substring(phys_material_to_resource_map.keys(), collision_mesh_instance_3d.name)
@@ -302,15 +234,8 @@ func _post_import(scene : Node):
 				collision_mesh_instance_3d.get_parent().remove_child(collision_mesh_instance_3d)
 				collision_mesh_instance_3d.free()
 			
-			# Reparent mesh instance to the first animatable body
-			#var smoothing = Smoothing.new()
-			#smoothing.name = "Smoothing"
-			#first_animatable_body.add_child(smoothing)
-			#smoothing.set_owner(scene)
-			
 			scene.remove_child(imported_scene_root)
 			imported_scene_root.set_owner(null)
-			#smoothing.add_child(imported_scene_root)
 			first_animatable_body.add_child(imported_scene_root)
 			imported_scene_root.set_owner(scene)
 			assign_external_material(imported_scene_root, object_name)
@@ -327,7 +252,7 @@ func _post_import(scene : Node):
 		
 		return scene
 	
-	print("No matching prefix found, retuning node as is.")
+	print("No matching prefix found, returning node as is.")
 	return scene
 
 func array_contains_substring(possible_options: Array, _name: String) -> String:
@@ -361,38 +286,30 @@ func assign_external_material(_node: MeshInstance3D, _object_name: String):
 				printerr("Invalid JSON structure")
 				return
 			
-			var first_object_mesh_index = parsed_json_data["nodes"][0].get("mesh", -1)
+			# Extract which mesh the root node references
+			# Unused, but left here for reference. Code instead searches by name
+			# var first_object_mesh_index = parsed_json_data["nodes"][0].get("mesh", -1)
 			
 			# parsed_json_data["meshes"] contains an index for the material 
 			# assigned to the given submesh
-			var material_indexes = []
 			var material_names = []
-			
 			for item in parsed_json_data["meshes"]:
 				if item["name"] == "M_" + _object_name:
-					
 					for submesh in item["primitives"]:
 						var material_idx = submesh["material"]
-						material_indexes.append(material_idx)
 						material_names.append(parsed_json_data["materials"][material_idx]["name"])
-						
 					print("Material names from glb: " + str(material_names))
 			
-			var external_material_paths = []
-			for material_name in material_names:
-				external_material_paths.append(search_material_resource(material_name))
-			
-			var k = 0
-			for external_material_path in external_material_paths:
-				if external_material_path:
-					var material_resource = ResourceLoader.load(external_material_path) as Material
+			for i in range(material_names.size()):
+				var material_path = search_material_resource(material_names[i])
+				if material_path:
+					var material_resource = ResourceLoader.load(material_path) as Material
 					if material_resource:
-						_node.mesh.surface_set_material(k, material_resource)
+						_node.mesh.surface_set_material(i, material_resource)
 					else:
-						print("Material unsuccesfully loaded.")
+						print("Material unsuccessfully loaded.")
 				else:
 					print("Path for external material not found.")
-				k += 1
 		
 		else:
 			print("JSON Parse Error: ", error_code)
@@ -406,10 +323,9 @@ func assign_physics_material_from_suffix(body : CollisionObject3D) -> void:
 	for key : String in phys_material_to_resource_map.keys():
 		if key in body.name:
 			body.physics_material_override = phys_material_to_resource_map[key]
-			body.collision_layer = body.collision_layer | phys_material_to_layer_map[key]
+			body.collision_layer |= phys_material_to_layer_map[key]
 			print("Physics material assigned: " + key)
 			break
-	return
 
 func generate_collision_shape(subject : MeshInstance3D, collision_shape : CollisionShape3D, _col_suffix : String) -> void:
 	
@@ -421,9 +337,7 @@ func generate_collision_shape(subject : MeshInstance3D, collision_shape : Collis
 		"-gbx":
 			shape = BoxShape3D.new()
 			shape.extents = bbox.size * 0.5
-			collision_shape.position.x = bbox.position.x + (bbox.size.x * .5)
-			collision_shape.position.y = bbox.position.y + (bbox.size.y * .5)
-			collision_shape.position.z = bbox.position.z + (bbox.size.z * .5)
+			collision_shape.position = bbox.get_center()
 		"-gsp":
 			shape = SphereShape3D.new()
 			shape.radius = max(bbox.size.x, bbox.size.y, bbox.size.z) * 0.5
@@ -445,9 +359,9 @@ func generate_collision_shape(subject : MeshInstance3D, collision_shape : Collis
 			shape.set_points(mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX])
 		"-gcc":
 			shape = ConcavePolygonShape3D.new()
-			var arrays = mesh.surface_get_arrays(0)
-			var vertices = arrays[Mesh.ARRAY_VERTEX]
-			var indices = arrays[Mesh.ARRAY_INDEX]
+			var surface_arrays = mesh.surface_get_arrays(0)
+			var vertices = surface_arrays[Mesh.ARRAY_VERTEX]
+			var indices = surface_arrays[Mesh.ARRAY_INDEX]
 			var faces = PackedVector3Array()
 			for j in range(0, indices.size(), 3):
 				if j + 2 < indices.size() and indices[j + 2] < vertices.size():
@@ -486,7 +400,7 @@ func search_material_resource(material_name: String, start_dir: String = "res://
 
 func assign_external_material_recursively(node):
 	var children = node.get_children()
-	if children.size() == 0:
+	if children.is_empty():
 		return
 	for child in children:
 		if child.name.begins_with("SM_"):
