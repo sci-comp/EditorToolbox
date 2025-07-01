@@ -57,7 +57,8 @@ Physics Materials (optional):
 In Blender,
 
 SM_Crate_01                          // Main renderable object
-|-- MI_Crate_01                      // This name must match a StandardMaterial3D in Godot
+|-- M_Crate_01
+|-- |-- MI_Crate_01                  // This name must match a StandardMaterial3D in Godot
 |-- SM_Crate_01-wood-gbx             // Box collision, wooden physics material
 |-- |-- M_Crate_01
 |-- |-- dummy_material
