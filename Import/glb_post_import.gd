@@ -1,56 +1,119 @@
 """
-Godot Import Pipeline for Blender Assets
-========================================
-
-This script processes Blender exports with custom naming conventions to create
-collision bodies and physics materials. Objects are exported individually from
-Blender with their children to generate proper collision hierarchies.
-
 License: MIT, by Paul
 
-Naming Conventions
-------------------
+=====================================================
+== Introduction - Blender to Godot Import Pipeline ==
+=====================================================
+
+This script expands replaces Godot's import features for imported objects.
+Please begin by reading Godot's documentation for default behavior first: https://docs.godotengine.org/en/3.5/tutorials/assets_pipeline/importing_scenes.html
+
+Extra features this script offers:
+	Extra options for collision shapes: box, sphere, capsule, cylinder, triangle mesh, and convex mesh
+	Automatically apply physics materials
+	Automatically assign materials
+
+Important: Do not mix Godot's built-in collision suffixes (-col, -convcol, etc.) with these custom ones.
+
+========================
+== Naming Conventions ==
+========================
+
+Once the naming convention is adopted, assets should automatically be ready to 
+use when dropped into Godot. Please see attached Blender Python scripts in order
+to learn how to batch rename data in Blender. Do not individually rename objects 
+by hand!
 
 Prefixes (Blender -> Godot):
- SM_ -> StaticBody3D + MeshInstance3D
- AB_ -> AnimatableBody3D
- SK_ -> SkeletalMesh (preserved)
- M_  -> Mesh data
+	AB_ -> AnimatableBody3D
+	M_  -> Mesh data
+	MI_ -> Material Instance
+	SK_ -> SkeletalMesh
+	SM_ -> Static Mesh, an Object in Blender, which translates to a StaticBody3D Godot
 
 Collision Suffixes:
- -gbx : BoxShape3D
- -gsp : SphereShape3D  
- -gcp : CapsuleShape3D
- -gcy : CylinderShape3D
- -gcx : ConvexPolygonShape3D
- -gcc : ConcavePolygonShape3D
+	-gbx : BoxShape3D
+	-gsp : SphereShape3D  
+	-gcp : CapsuleShape3D
+	-gcy : CylinderShape3D
+	-gcx : ConvexPolygonShape3D
+	-gcc : ConcavePolygonShape3D
 
 Physics Materials (optional):
- -cloth, -dirt, -glass, -ice, -metal, -organic, -plastic, -stone, -wood
+	-cloth
+	-dirt
+	-glass
+	-ice
+	-metal
+	-organic
+	-plastic
+	-stone
+	-wood
 
-Multiple Collision Shapes
--------------------------
+====================
+== Simple Example ==
+====================
+
+In Blender,
+
+SM_Crate_01                          // Main renderable object
+|-- MI_Crate_01                      // This name must match a StandardMaterial3D in Godot
+|-- SM_Crate_01-wood-gbx             // Box collision, wooden physics material
+|-- |-- M_Crate_01
+|-- |-- dummy_material
+
+After post import in Godot,
+
+PF_Crate_01-n1 (MeshInstance3D)
+|-- SB_Crate_01-metal-gbx (StaticBody3D)
+|-- |-- CS_Crate_01-metal-gbx (CollisionShape3D)
+
+Note: There may only ever be one rendered mesh. This is by design-- there's no 
+reason to not first merge rendered mesh in Blender.
+
+Note: In Blender, collision shapes are just ordinary objects. They may have
+materials, but we do not read this data. The only material information referenced
+is, in this example, MI_Crate_01.
+
+============================================
+== Example with Multiple Collision Shapes ==
+============================================
+
 To create multiple collision shapes for a single object, add collision objects
-as children of the main SM_ object in Blender. Each child should follow the
-pattern: SM_ObjectName-[material]-[collision]-[variant]
+as children of the main SM_ object in Blender.
 
-Example:
- SM_Crate_01                          // Main renderable object
- |-- SM_Crate_01-metal-gbx            // Box collision for metal parts
- |-- SM_Crate_01-wood-gcx_001         // Convex collision for wood parts
- |-- SM_Crate_01-cloth-gsp_002        // Sphere collision for cloth parts
+In Blender,
 
-Results in Godot:
- PF_Crate_01-n1 (MeshInstance3D)
- |-- SB_Crate_01-metal-gbx (StaticBody3D)
- |   |-- CS_Crate_01-metal-gbx (CollisionShape3D)
- |-- SB_Crate_01-wood-gcx_001 (StaticBody3D)
- |   |-- CS_Crate_01-wood-gcx_001 (CollisionShape3D)
- |-- SB_Crate_01-cloth-gsp_002 (StaticBody3D)
-	 |-- CS_Crate_01-cloth-gsp_002 (CollisionShape3D)
+SM_Crate_01                          // Main renderable object
+|-- M_Crate_01
+|-- |-- MI_Crate_01                  // This name must match a StandardMaterial3D in Godot
+|-- SM_Crate_01-metal-gbx            // Box collision for metal parts
+|-- |-- M_Crate_01-metal-gbx
+|-- |-- |-- dummy_material
+|-- SM_Crate_01-wood-gcx_001         // Convex collision for wood parts
+|-- |-- M_Crate_01-gdx_001
+|-- |-- |-- dummy_material
+|-- SM_Crate_01-cloth-gsp_002        // Sphere collision for cloth parts
+|-- |-- M_Crate_01-cloth-gsp_002
+|-- |-- |-- dummy_material
 
-Note: Do not mix Godot's built-in collision suffixes (-col, -convcol, etc.) 
-with these custom ones.
+After post import in Godot,
+
+PF_Crate_01-n1 (MeshInstance3D)
+|-- SB_Crate_01-metal-gbx (StaticBody3D)
+|-- |-- CS_Crate_01-metal-gbx (CollisionShape3D)
+|-- SB_Crate_01-wood-gcx_001 (StaticBody3D)
+|-- |-- CS_Crate_01-wood-gcx_001 (CollisionShape3D)
+|-- SB_Crate_01-cloth-gsp_002 (StaticBody3D)
+|-- |-- CS_Crate_01-cloth-gsp_002 (CollisionShape3D)
+
+====================
+== Other Features ==
+====================
+
+Features for skeletal mesh, animatable bodies, and rigid bodies is currently in
+progress and undocumented.
+
 """
 
 @tool
@@ -110,11 +173,6 @@ func _post_import(scene : Node):
 			for child : MeshInstance3D in children:
 				i += 1
 				
-				# Remove after testing, get_children never returns null?
-				#if !child:
-				#	printerr("Child is null")
-				#	return Node.new()
-				
 				var col_suffix = array_contains_substring(collision_options, child.name)
 				if col_suffix != "":
 					# Example pattern: SM_Crate_01-gbx-wood_001
@@ -136,6 +194,7 @@ func _post_import(scene : Node):
 					scene.add_child(static_body)
 					static_body.set_owner(scene)
 					static_body.add_child(collision_shape)
+					
 					collision_shape.set_owner(scene)
 					
 					static_body.transform.origin = child.transform.origin
@@ -152,6 +211,22 @@ func _post_import(scene : Node):
 			
 			imported_scene_root.name = "MI_" + object_name
 			scene.name = "PF_" + object_name + "-n1"
+			
+			# Count StaticBody3D nodes
+			var static_body_count = 0
+			var single_static_body = null
+			for child in scene.get_children():
+				if child is StaticBody3D:
+					static_body_count += 1
+					single_static_body = child
+
+			# If only one StaticBody3D, reparent mesh under it. This might be something we want to rotate.
+			if static_body_count == 1:
+				scene.remove_child(imported_scene_root)
+				imported_scene_root.set_owner(null)
+				single_static_body.add_child(imported_scene_root)
+				imported_scene_root.set_owner(scene)
+			
 			return scene
 	
 	elif object_prefix == "AB":
