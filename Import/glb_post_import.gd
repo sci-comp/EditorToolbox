@@ -154,7 +154,7 @@ func _post_import(scene : Node):
 		return Node.new()
 	
 	if not imported_scene_root.name.contains("_"):
-		print("This scene does not have the usual naming convention. Returning as-is, ", scene.name)
+		print("This scene does not have the usual naming convention. Returning as-is, ", imported_scene_root.name)
 		return scene
 	
 	var object_prefix = imported_scene_root.name.split("_", false, 1)[0]
@@ -338,12 +338,13 @@ func array_contains_substring(possible_options: Array, _name: String) -> String:
 	return ""
 
 func assign_external_material(_node: MeshInstance3D, _object_name: String):
+	print("Assigning a material to: ", _node.name)
 	
 	var file_path = get_source_file()
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	
 	if file:
-		print("file found: ", file_path)
+		print("File found: ", file_path)
 		var magic = file.get_32()
 		var version = file.get_32()
 		var length = file.get_32()
@@ -385,7 +386,7 @@ func assign_external_material(_node: MeshInstance3D, _object_name: String):
 					else:
 						print("Material unsuccessfully loaded.")
 				else:
-					print("Path for external material not found.")
+					print("Path for external material not found: ", material_names[i])
 		
 		else:
 			print("JSON Parse Error: ", error_code)
@@ -480,6 +481,5 @@ func assign_external_material_recursively(node):
 		if child.name.begins_with("SM_"):
 			var _object_name = child.name.replace("SM_", "")
 			var mesh_instance = child as MeshInstance3D
-			print("Assigning a material to child node: ", child.name)
 			assign_external_material(mesh_instance, _object_name)
 		assign_external_material_recursively(child)
